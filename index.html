@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roguelike TCG v2 - 輕量化架構演示</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            margin: 10px 0;
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        #player-status {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .health { color: #e74c3c; }
+        .energy { color: #3498db; }
+        .gold { color: #f1c40f; }
+
+        #hand {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            min-height: 200px;
+        }
+
+        .card {
+            min-width: 150px;
+            width: 150px;
+            height: 200px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(52, 152, 219, 0.4);
+        }
+
+        .card.attack { border-color: #e74c3c; }
+        .card.skill { border-color: #27ae60; }
+        .card.power { border-color: #9b59b6; }
+
+        .card.rare {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+            box-shadow: 0 0 20px rgba(155, 89, 182, 0.3);
+        }
+
+        .card.legendary {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            box-shadow: 0 0 25px rgba(243, 156, 18, 0.4);
+        }
+
+        .card-cost {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 30px;
+            height: 30px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+            line-height: 1.3;
+            opacity: 0.9;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #combat-area {
+            background: rgba(231, 76, 60, 0.1);
+            border: 2px solid #e74c3c;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .enemy {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .enemy-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .enemy-health {
+            font-size: 1.3rem;
+            background: rgba(231, 76, 60, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .combat-actions {
+            text-align: center;
+        }
+
+        button {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #map-area {
+            background: rgba(39, 174, 96, 0.1);
+            border: 2px solid #27ae60;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .current-floor {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+
+        .demo-controls {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .demo-controls h3 {
+            color: #f1c40f;
+            margin-bottom: 15px;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+
+        .log-entry.combat { border-color: #e74c3c; }
+        .log-entry.system { border-color: #f1c40f; }
+        .log-entry.effect { border-color: #9b59b6; }
+
+        @keyframes cardPlay {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+
+        .card.playing {
+            animation: cardPlay 0.6s ease-in-out;
+        }
+
+        @keyframes damage {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .damage-number {
+            position: absolute;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.5rem;
+            animation: damage 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🎮 Roguelike TCG v2</h1>
+            <p>輕量化架構演示 - 分層清晰、易於擴展</p>
+        </div>
+
+        <div id="player-status">
+            <div class="status-item health">
+                <div class="status-label">生命值</div>
+                <div class="status-value">100/100</div>
+            </div>
+            <div class="status-item energy">
+                <div class="status-label">能量</div>
+                <div class="status-value">3/3</div>
+            </div>
+            <div class="status-item gold">
+                <div class="status-label">金幣</div>
+                <div class="status-value">0</div>
+            </div>
+        </div>
+
+        <div id="hand">
+            <!-- 手牌會在這裡動態生成 -->
+        </div>
+
+        <div id="combat-area" style="display:none;">
+            <div class="enemy">
+                <div class="enemy-name">哥布林</div>
+                <div class="enemy-health">30/30</div>
+            </div>
+            <div class="combat-actions">
+                <button id="end-turn">結束回合</button>
+            </div>
+        </div>
+
+        <div id="map-area">
+            <div class="current-floor">第 1 層</div>
+            <div class="encounters">
+                <p>準備進入戰鬥...</p>
+            </div>
+        </div>
+
+        <div class="demo-controls">
+            <h3>🔧 演示控制</h3>
+            <button onclick="startNewGame()">開始新遊戲</button>
+            <button onclick="addRandomCard()">添加隨機卡牌</button>
+            <button onclick="showArchitecture()">顯示架構說明</button>
+        </div>
+
+        <div class="log" id="game-log">
+            <div class="log-entry system">🚀 遊戲系統初始化完成</div>
+            <div class="log-entry">📦 輕量化架構載入成功</div>
+            <div class="log-entry">🎯 事件系統已就緒</div>
+            <div class="log-entry combat">⚔️ 準備開始戰鬥...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // === 簡化的演示版本 ===
+        
+        class DemoGame {
+            constructor() {
+                this.state = {
+                    player: {
+                        health: 100,
+                        maxHealth: 100,
+                        energy: 3,
+                        maxEnergy: 3,
+                        gold: 0,
+                        hand: []
+                    },
+                    combat: {
+                        active: false,
+                        enemy: null,
+                        turn: 1
+                    }
+                };
+                
+                this.setupStarterDeck();
+                this.render();
+                this.log('🎮 演示遊戲啟動成功！');
+            }
+            
+            setupStarterDeck() {
+                const cards = [
+                    { name: '攻擊', cost: 1, type: 'attack', rarity: 'common', 
+                      effects: '造成 6 點傷害' },
+                    { name: '防禦', cost: 1, type: 'skill', rarity: 'common', 
+                      effects: '獲得 5 點格擋' },
+                    { name: '治療藥水', cost: 2, type: 'skill', rarity: 'rare', 
+                      effects: '恢復 10 點生命' },
+                    { name: '火球術', cost: 3, type: 'attack', rarity: 'legendary', 
+                      effects: '造成 15 點傷害' },
+                    { name: '抽牌', cost: 1, type: 'skill', rarity: 'common', 
+                      effects: '抽 2 張牌' }
+                ];
+                
+                this.state.player.hand = cards;
+            }
+            
+            render() {
+                this.renderPlayerStatus();
+                this.renderHand();
+            }
+            
+            renderPlayerStatus() {
+                const player = this.state.player;
+                const statusEl = document.getElementById('player-status');
+                statusEl.innerHTML = `
+                    <div class="status-item health">
+                        <div class="status-label">生命值</div>
+                        <div class="status-value">${player.health}/${player.maxHealth}</div>
+                    </div>
+                    <div class="status-item energy">
+                        <div class="status-label">能量</div>
+                        <div class="status-value">${player.energy}/${player.maxEnergy}</div>
+                    </div>
+                    <div class="status-item gold">
+                        <div class="status-label">金幣</div>
+                        <div class="status-value">${player.gold}</div>
+                    </div>
+                `;
+            }
+            
+            renderHand() {
+                const handEl = document.getElementById('hand');
+                handEl.innerHTML = '';
+                
+                this.state.player.hand.forEach((card, index) => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `card ${card.rarity} ${card.type}`;
+                    cardEl.innerHTML = `
+                        <div class="card-cost">${card.cost}</div>
+                        <div class="card-name">${card.name}</div>
+                        <div class="card-description">${card.effects}</div>
+                    `;
+                    
+                    cardEl.addEventListener('click', () => this.playCard(index));
+                    handEl.appendChild(cardEl);
+                });
+            }
+            
+            playCard(index) {
+                const card = this.state.player.hand[index];
+                if (this.state.player.energy >= card.cost) {
+                    this.state.player.energy -= card.cost;
+                    
+                    // 簡單的卡牌效果演示
+                    this.handleCardEffect(card);
+                    
+                    // 移除卡牌
+                    this.state.player.hand.splice(index, 1);
+                    
+                    this.log(`🎴 使用了 ${card.name}`, 'effect');
+                    this.render();
+                } else {
+                    this.log(`❌ 能量不足，無法使用 ${card.name}`, 'combat');
+                }
+            }
+            
+            handleCardEffect(card) {
+                switch (card.name) {
+                    case '治療藥水':
+                        this.state.player.health = Math.min(
+                            this.state.player.maxHealth, 
+                            this.state.player.health + 10
+                        );
+                        this.showDamageNumber('+10', 'heal');
+                        break;
+                    case '攻擊':
+                    case '火球術':
+                        this.showDamageNumber('-' + (card.name === '火球術' ? '15' : '6'), 'damage');
+                        break;
+                }
+            }
+            
+            showDamageNumber(text, type) {
+                const number = document.createElement('div');
+                number.className = 'damage-number';
+                number.textContent = text;
+                number.style.color = type === 'heal' ? '#27ae60' : '#e74c3c';
+                number.style.left = Math.random() * 200 + 'px';
+                number.style.top = '50%';
+                
+                document.body.appendChild(number);
+                setTimeout(() => number.remove(), 1000);
+            }
+            
+            log(message, type = '') {
+                const logEl = document.getElementById('game-log');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+                
+                // 限制日誌條目數量
+                if (logEl.children.length > 20) {
+                    logEl.removeChild(logEl.firstChild);
+                }
+            }
+        }
+        
+        // 全域函數
+        let game;
+        
+        window.startNewGame = function() {
+            game = new DemoGame();
+            game.log('🆕 開始新遊戲！', 'system');
+        };
+        
+        window.addRandomCard = function() {
+            const randomCards = [
+                { name: '閃電箭', cost: 2, type: 'attack', rarity: 'rare', effects: '造成 8 點傷害，抽 1 張牌' },
+                { name: '護盾術', cost: 1, type: 'skill', rarity: 'common', effects: '獲得 8 點格擋' },
+                { name: '怒火', cost: 0, type: 'power', rarity: 'legendary', effects: '本場戰鬥攻擊力 +3' }
+            ];
+            
+            const randomCard = randomCards[Math.floor(Math.random() * randomCards.length)];
+            game.state.player.hand.push(randomCard);
+            game.render();
+            game.log(`✨ 獲得了新卡牌：${randomCard.name}`, 'system');
+        };
+        
+        window.showArchitecture = function() {
+            const info = `
+🏗️ 第二代架構特點：
+
+📦 分層設計：
+• 數據層 - 純狀態管理
+• 系統層 - 獨立業務邏輯  
+• UI層 - 純展示組件
+• 控制層 - 協調調度
+
+⚡ 輕量化：
+• 統一狀態管理
+• 插件化效果系統
+• 事件驅動架構
+• 移除重複代碼
+
+🔧 易擴展：
+• 新效果只需註冊
+• 模組化組件設計
+• 依賴注入模式
+• 完全解耦架構
+
+🎯 現代化：
+• ES6+ 語法
+• Promise/async
+• 事件總線模式
+• 可測試設計
+            `.trim();
+            
+            alert(info);
+            game.log('📋 已顯示架構說明', 'system');
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new DemoGame();
+        });
+    </script>
+</body>
+</html>
