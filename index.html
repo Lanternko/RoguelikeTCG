@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>卡牌美術設計系統 - 完整實作指南</title>
+    <title>MyGO!!!!! Roguelike TCG - MVP Stage 1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,7 +11,7 @@
                 extend: {
                     colors: {
                         'human-base': '#9F563A',
-                        'human-dark': '#79432C', 
+                        'human-dark': '#79432C',
                         'human-text': '#F3EAD3',
                         'yin-base': '#293047',
                         'yin-dark': '#1A2033',
@@ -22,8 +22,11 @@
                         'legendary-ring': '#DAA520'
                     },
                     animation: {
+                        'damage': 'damage 1.5s ease-out forwards',
+                        'heal': 'heal 1.5s ease-out forwards',
                         'glow': 'glow 2s ease-in-out infinite alternate',
-                        'float': 'float 3s ease-in-out infinite'
+                        'shake': 'shake 0.5s ease-in-out',
+                        'card-draw': 'cardDraw 0.8s ease-out forwards'
                     }
                 }
             }
@@ -32,301 +35,1061 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        @keyframes damage {
+            0% { transform: translateY(0) scale(1); opacity: 1; color: #EF4444; }
+            50% { transform: translateY(-30px) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+        }
+        
+        @keyframes heal {
+            0% { transform: translateY(0) scale(1); opacity: 1; color: #10B981; }
+            50% { transform: translateY(-20px) scale(1.1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(0.9); opacity: 0; }
+        }
+        
         @keyframes glow {
             from { box-shadow: 0 0 10px rgba(218, 165, 32, 0.3); }
             to { box-shadow: 0 0 20px rgba(218, 165, 32, 0.7); }
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
-        .card-base {
-            width: 220px;
-            height: 320px;
+        
+        @keyframes cardDraw {
+            0% { transform: translateY(100px) scale(0.5); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        .hover-lift {
+        
+        .card-hover {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .hover-lift:hover {
-            transform: translateY(-8px) scale(1.02);
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.05);
+            z-index: 20;
+        }
+        
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed transparent;
+        }
+        .drop-zone.drag-over {
+            border-color: #10B981;
+            background-color: rgba(16, 185, 129, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .floating-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.8rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .pulse-glow {
+            animation: pulse 2s infinite;
+        }
+        
+        .card-zone-occupied {
+            border-color: #10B981;
+            border-style: solid;
+        }
+        
+        .hp-bar-transition {
+            transition: width 1s ease-out;
+        }
+        
+        .turn-phase-indicator {
+            background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+            animation: pulse 2s infinite;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white p-8">
+<body class="bg-slate-900 text-white min-h-screen">
 
-    <!-- 標題區域 -->
-    <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-            🎨 卡牌美術設計系統
-        </h1>
-        <p class="text-xl text-gray-300">基於和色的內斂質感設計</p>
-    </div>
-
-    <!-- 設計哲學 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">🎭 設計哲學</h2>
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="bg-slate-800 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4 text-yellow-400">內斂質感</h3>
-                <p class="text-gray-300">避免高飽和度色彩，追求東方美學的沉穩與深度</p>
+    <!-- 遊戲標題與狀態 -->
+    <header class="bg-slate-800 p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    🎸 MyGO!!!!! Roguelike TCG
+                </h1>
+                <div class="text-sm text-gray-400">MVP Stage 1 - 核心戰鬥循環</div>
             </div>
-            <div class="bg-slate-800 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4 text-blue-400">和色基礎</h3>
-                <p class="text-gray-300">使用日本傳統色彩，賦予卡牌文化內涵</p>
-            </div>
-            <div class="bg-slate-800 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4 text-green-400">質感分層</h3>
-                <p class="text-gray-300">通過工藝質感而非顏色變化區分稀有度</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- 色彩系統展示 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">🎨 屬性色彩系統</h2>
-        <div class="grid md:grid-cols-3 gap-8">
             
-            <!-- 人屬性 -->
-            <div class="text-center">
-                <h3 class="text-2xl font-bold mb-4">人 (Human)</h3>
-                <div class="bg-human-base p-8 rounded-xl mb-4">
-                    <div class="text-human-text font-bold text-lg">柿渋色</div>
-                    <div class="text-human-text opacity-80">#9F563A</div>
-                </div>
-                <p class="text-gray-400">溫暖沉穩，如歲月沈澱的器物</p>
-            </div>
-
-            <!-- 陰屬性 -->
-            <div class="text-center">
-                <h3 class="text-2xl font-bold mb-4">陰 (Yin)</h3>
-                <div class="bg-yin-base p-8 rounded-xl mb-4">
-                    <div class="text-yin-text font-bold text-lg">藍鉄色</div>
-                    <div class="text-yin-text opacity-80">#293047</div>
-                </div>
-                <p class="text-gray-400">深邃神秘，如黎明前的夜空</p>
-            </div>
-
-            <!-- 陽屬性 -->
-            <div class="text-center">
-                <h3 class="text-2xl font-bold mb-4">陽 (Yang)</h3>
-                <div class="bg-yang-base border-2 border-gray-300 p-8 rounded-xl mb-4">
-                    <div class="text-yang-text font-bold text-lg">白練</div>
-                    <div class="text-yang-text opacity-80">#FCFAF2</div>
-                </div>
-                <p class="text-gray-400">純淨溫潤，如未漂白的絲綢</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- 稀有度展示 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">💎 稀有度質感系統</h2>
-        
-        <!-- 人屬性卡牌展示 -->
-        <h3 class="text-2xl font-bold mb-6 text-center">人屬性卡牌示例</h3>
-        <div class="grid md:grid-cols-3 gap-8 mb-12">
-            
-            <!-- 普通卡 -->
-            <div class="card-base bg-human-base text-human-text rounded-2xl p-4 mx-auto hover-lift">
-                <div class="text-center mb-4">
-                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">普通</div>
-                    <h4 class="text-lg font-bold">民風淳樸</h4>
-                </div>
-                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
-                    插畫區域
-                </div>
-                <div class="text-center space-y-2">
-                    <div class="text-sm">平滑質樸的基礎質感</div>
-                    <div class="text-xs bg-black/20 p-2 rounded">Class: bg-human-base</div>
-                </div>
-            </div>
-
-            <!-- 稀有卡 -->
-            <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-md text-human-text rounded-2xl p-4 mx-auto hover-lift">
-                <div class="text-center mb-4">
-                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">稀有</div>
-                    <h4 class="text-lg font-bold">仁道傳承</h4>
-                </div>
-                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
-                    插畫區域
-                </div>
-                <div class="text-center space-y-2">
-                    <div class="text-sm">墨跡層次的漸層質感</div>
-                    <div class="text-xs bg-black/20 p-2 rounded">Class: bg-gradient-to-br from-human-base to-human-dark shadow-md</div>
-                </div>
-            </div>
-
-            <!-- 傳說卡 -->
-            <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text rounded-2xl p-4 mx-auto hover-lift animate-glow">
-                <div class="text-center mb-4">
-                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">傳說</div>
-                    <h4 class="text-lg font-bold">集大成者</h4>
-                </div>
-                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
-                    插畫區域
-                </div>
-                <div class="text-center space-y-2">
-                    <div class="text-sm">古卷金邊的頂級質感</div>
-                    <div class="text-xs bg-black/20 p-2 rounded">Class: + shadow-lg ring-2 ring-legendary-ring</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 其他屬性卡牌 -->
-        <h3 class="text-2xl font-bold mb-6 text-center">其他屬性對比</h3>
-        <div class="grid md:grid-cols-2 gap-8">
-            
-            <!-- 陰屬性傳說卡 -->
-            <div class="card-base bg-gradient-to-br from-yin-base to-yin-dark shadow-lg ring-2 ring-legendary-ring text-yin-text rounded-2xl p-4 mx-auto hover-lift">
-                <div class="text-center mb-4">
-                    <div class="bg-white/10 text-xs px-2 py-1 rounded inline-block mb-2">陰 · 傳說</div>
-                    <h4 class="text-lg font-bold">混沌之源</h4>
-                </div>
-                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
-                    插畫區域
-                </div>
+            <div class="flex items-center gap-4">
+                <!-- 回合計數器 -->
                 <div class="text-center">
-                    <div class="text-sm">深邃神秘的陰屬傳說</div>
+                    <div class="text-xs text-gray-400">回合</div>
+                    <div id="turn-counter" class="text-xl font-bold text-yellow-400">1</div>
                 </div>
-            </div>
-
-            <!-- 陽屬性稀有卡 -->
-            <div class="card-base bg-gradient-to-br from-yang-base to-yang-dark shadow-md text-yang-text rounded-2xl p-4 mx-auto hover-lift">
-                <div class="text-center mb-4">
-                    <div class="bg-black/10 text-xs px-2 py-1 rounded inline-block mb-2">陽 · 稀有</div>
-                    <h4 class="text-lg font-bold">陰陽調和</h4>
-                </div>
-                <div class="bg-black/10 h-32 rounded-lg mb-4 flex items-center justify-center text-black/50">
-                    插畫區域
-                </div>
+                
+                <!-- 牌庫計數 -->
                 <div class="text-center">
-                    <div class="text-sm">純淨溫潤的陽屬稀有</div>
+                    <div class="text-xs text-gray-400">牌庫</div>
+                    <div id="deck-count" class="text-lg font-bold text-blue-400">15</div>
+                </div>
+                
+                <!-- 棄牌堆計數 -->
+                <div class="text-center">
+                    <div class="text-xs text-gray-400">棄牌</div>
+                    <div id="discard-count" class="text-lg font-bold text-purple-400">0</div>
+                </div>
+                
+                <button id="reset-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    🔄 重置
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主遊戲區域 -->
+    <main class="container mx-auto p-4">
+        
+        <!-- 遊戲狀態與階段指示器 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- 玩家狀態 -->
+            <div class="bg-slate-800 p-4 rounded-xl">
+                <h2 class="text-lg font-bold mb-3 text-green-400 flex items-center gap-2">
+                    🛡️ 玩家狀態
+                    <div id="player-status-indicator" class="w-3 h-3 rounded-full bg-green-500 pulse-glow"></div>
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span>生命值</span>
+                        <span id="player-hp" class="font-bold text-green-400">100/100</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                        <div id="player-hp-bar" class="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full hp-bar-transition" style="width: 100%"></div>
+                    </div>
+                    
+                    <!-- 玩家buff顯示 -->
+                    <div id="player-buffs" class="flex gap-2 flex-wrap"></div>
+                </div>
+            </div>
+
+            <!-- 階段指示器 -->
+            <div class="bg-slate-800 p-4 rounded-xl">
+                <h2 class="text-lg font-bold mb-3 text-center">🎯 遊戲階段</h2>
+                <div id="game-phase" class="turn-phase-indicator text-center py-3 px-4 rounded-lg font-bold text-white">
+                    抽牌階段
+                </div>
+                
+                <!-- 階段說明 -->
+                <div id="phase-description" class="text-center text-sm text-gray-400 mt-2">
+                    準備開始新回合...
+                </div>
+            </div>
+
+            <!-- 投手狀態 -->
+            <div class="bg-slate-800 p-4 rounded-xl">
+                <h2 class="text-lg font-bold mb-3 text-red-400 flex items-center gap-2">
+                    ⚔️ 投手狀態
+                    <div id="pitcher-status-indicator" class="w-3 h-3 rounded-full bg-red-500 pulse-glow"></div>
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span>生命值</span>
+                        <span id="pitcher-hp" class="font-bold text-red-400">150/150</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                        <div id="pitcher-hp-bar" class="bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full hp-bar-transition" style="width: 100%"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span>攻擊力</span>
+                        <span id="pitcher-attack" class="font-bold text-orange-400">30</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>屬性</span>
+                        <span id="pitcher-attribute" class="font-bold text-purple-400">天</span>
+                    </div>
+                    
+                    <!-- 投手debuff顯示 -->
+                    <div id="pitcher-debuffs" class="flex gap-2 flex-wrap"></div>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- 工程實作指南 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">⚙️ 工程實作指南</h2>
-        
-        <div class="bg-slate-800 p-6 rounded-xl mb-8">
-            <h3 class="text-xl font-bold mb-4 text-green-400">動態樣式生成函數</h3>
-            <pre class="bg-slate-900 p-4 rounded-lg text-sm overflow-x-auto"><code class="text-green-300">
-// 根據卡牌屬性和稀有度動態生成 Tailwind Classes
-function generateCardClasses(attribute, rarity) {
-  const baseClasses = 'card-base rounded-2xl p-4 transition-all duration-300 hover:-translate-y-2';
-  
-  // 屬性色彩映射
-  const attributeColors = {
-    human: { base: 'human-base', dark: 'human-dark', text: 'human-text' },
-    yin: { base: 'yin-base', dark: 'yin-dark', text: 'yin-text' },
-    yang: { base: 'yang-base', dark: 'yang-dark', text: 'yang-text' }
-  };
-  
-  // 稀有度質感映射
-  const rarityStyles = {
-    common: (colors) => `bg-${colors.base}`,
-    rare: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-md`,
-    legendary: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-lg ring-2 ring-legendary-ring`
-  };
-  
-  const colors = attributeColors[attribute];
-  const backgroundStyle = rarityStyles[rarity](colors);
-  
-  return `${baseClasses} ${backgroundStyle} text-${colors.text}`;
-}
-
-// 使用示例
-const cardClass = generateCardClasses('human', 'legendary');
-// 結果: "card-base rounded-2xl p-4 ... bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text"
-</code></pre>
-        </div>
-
-        <div class="bg-slate-800 p-6 rounded-xl mb-8">
-            <h3 class="text-xl font-bold mb-4 text-blue-400">React 組件範例</h3>
-            <pre class="bg-slate-900 p-4 rounded-lg text-sm overflow-x-auto"><code class="text-blue-300">
-function Card({ card }) {
-  const cardClasses = generateCardClasses(card.attribute, card.rarity);
-  
-  return (
-    &lt;div className={cardClasses}&gt;
-      &lt;div className="text-center mb-4"&gt;
-        &lt;div className="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2"&gt;
-          {card.rarity}
-        &lt;/div&gt;
-        &lt;h4 className="text-lg font-bold"&gt;{card.name}&lt;/h4&gt;
-      &lt;/div&gt;
-      
-      &lt;div className="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center"&gt;
-        &lt;img src={card.artwork} alt={card.name} className="max-w-full max-h-full object-cover rounded" /&gt;
-      &lt;/div&gt;
-      
-      &lt;div className="text-center space-y-2"&gt;
-        &lt;div className="text-sm"&gt;{card.description}&lt;/div&gt;
-        &lt;div className="flex justify-around"&gt;
-          &lt;span&gt;⚔️ {card.attack}&lt;/span&gt;
-          &lt;span&gt;💎 {card.crit}&lt;/span&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  );
-}
-</code></pre>
-        </div>
-    </section>
-
-    <!-- 設計規範總結 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">📋 設計規範總結</h2>
-        
-        <div class="grid md:grid-cols-2 gap-8">
-            <div class="bg-slate-800 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4 text-purple-400">✅ 設計優勢</h3>
-                <ul class="space-y-2 text-gray-300">
-                    <li>• <strong>文化內涵深度</strong>：和色系統賦予卡牌東方美學</li>
-                    <li>• <strong>視覺統一性</strong>：所有卡牌保持和諧的色彩基調</li>
-                    <li>• <strong>工程友好性</strong>：Tailwind CSS 原子類易於實現</li>
-                    <li>• <strong>可擴展性</strong>：新屬性只需添加對應色彩配置</li>
-                    <li>• <strong>性能優化</strong>：純 CSS 實現，無需額外資源</li>
-                </ul>
-            </div>
+        <!-- 戰鬥區域 -->
+        <div class="bg-slate-800 p-6 rounded-xl mb-6">
+            <h2 class="text-xl font-bold mb-6 text-center">⚔️ 戰鬥區域</h2>
             
-            <div class="bg-slate-800 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4 text-orange-400">🚀 改進建議</h3>
-                <ul class="space-y-2 text-gray-300">
-                    <li>• <strong>動效增強</strong>：添加更豐富的 hover 和點擊動效</li>
-                    <li>• <strong>無障礙支持</strong>：考慮色盲用戶的區分度</li>
-                    <li>• <strong>響應式適配</strong>：不同螢幕尺寸的卡牌大小調整</li>
-                    <li>• <strong>主題切換</strong>：支持深色/淺色模式切換</li>
-                    <li>• <strong>個性化</strong>：允許玩家自定義卡背或邊框</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <!-- 互動示例 -->
-    <section class="mb-16">
-        <h2 class="text-3xl font-bold mb-8 text-center">🎮 互動效果示例</h2>
-        <div class="text-center">
-            <p class="text-gray-400 mb-6">將滑鼠懸停在下方卡牌上體驗互動效果</p>
-            <div class="flex justify-center space-x-8">
-                <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text rounded-2xl p-4 hover-lift cursor-pointer animate-float">
-                    <div class="text-center">
-                        <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">互動示例</div>
-                        <h4 class="text-lg font-bold">懸停效果</h4>
-                        <div class="bg-black/20 h-24 rounded-lg mt-4 flex items-center justify-center text-white/50">
-                            ✨ 卡牌特效
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- 打擊區 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-bold mb-2 text-red-300">🗡️ 打擊區</h3>
+                    <div id="strike-zone" class="drop-zone bg-slate-700 border-2 border-dashed border-gray-600 rounded-xl p-4 h-40 flex items-center justify-center min-h-[160px]" data-zone="strike_zone">
+                        <div class="text-center text-gray-400">
+                            <div class="text-3xl mb-2">🗡️</div>
+                            <div class="text-sm">拖拽打者卡到此處</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 輔助區 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-bold mb-2 text-blue-300">🛡️ 輔助區</h3>
+                    <div id="support-zone" class="drop-zone bg-slate-700 border-2 border-dashed border-gray-600 rounded-xl p-4 h-40 flex items-center justify-center min-h-[160px]" data-zone="support_zone">
+                        <div class="text-center text-gray-400">
+                            <div class="text-3xl mb-2">🛡️</div>
+                            <div class="text-sm">拖拽輔助卡到此處</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 法術區 -->
+                <div class="text-center">
+                    <h3 class="text-sm font-bold mb-2 text-purple-300">✨ 法術區</h3>
+                    <div id="spell-zone" class="drop-zone bg-slate-700 border-2 border-dashed border-gray-600 rounded-xl p-4 h-40 flex items-center justify-center min-h-[160px]" data-zone="spell_zone">
+                        <div class="text-center text-gray-400">
+                            <div class="text-3xl mb-2">✨</div>
+                            <div class="text-sm">拖拽法術卡到此處</div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- 戰鬥按鈕區域 -->
+            <div class="flex justify-center gap-4">
+                <button id="attack-btn" class="px-8 py-4 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    ⚔️ 攻擊！
+                </button>
+                <button id="end-turn-btn" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    🔄 結束回合
+                </button>
+            </div>
         </div>
-    </section>
 
-    <footer class="text-center text-gray-500 pt-8 border-t border-gray-700">
-        <p>🎨 基於東方美學的卡牌設計系統 | 使用 Tailwind CSS 實現</p>
-    </footer>
+        <!-- 手牌區域 -->
+        <div class="bg-slate-800 p-4 rounded-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">🎴 手牌</h2>
+                <div class="text-sm text-gray-400">
+                    <span id="hand-count">0</span>/7 張
+                </div>
+            </div>
+            <div id="hand-cards" class="flex gap-3 overflow-x-auto pb-2 min-h-[140px]">
+                <!-- 手牌將在這裡動態生成 -->
+            </div>
+        </div>
 
+        <!-- 遊戲日誌 -->
+        <div class="bg-slate-800 p-4 rounded-xl mt-6">
+            <h2 class="text-lg font-bold mb-3 text-purple-400">📜 戰鬥日誌</h2>
+            <div id="game-log" class="h-32 overflow-y-auto space-y-1 text-sm bg-slate-900 p-3 rounded">
+                <div class="text-green-400">🚀 遊戲開始！歡迎來到 MyGO!!!!! Roguelike TCG</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 核心戰鬥系統 -->
+    <script>
+        // ===== 🎮 遊戲狀態管理 =====
+        class GameState {
+            constructor() {
+                this.player = {
+                    current_hp: 100,
+                    max_hp: 100,
+                    deck: [],
+                    hand: [],
+                    discard_pile: [],
+                    strike_zone: null,
+                    support_zone: null,
+                    spell_zone: null,
+                    active_buffs: []
+                };
+                
+                this.pitcher = {
+                    current_hp: 150,
+                    max_hp: 150,
+                    base_attack: 30,
+                    current_attack: 30,
+                    attribute: 'heaven',
+                    active_debuffs: []
+                };
+                
+                this.gamePhase = 'DRAW_PHASE';
+                this.turnCount = 1;
+                this.turnBuffs = [];
+            }
+        }
+
+        // ===== 🃏 卡牌數據庫 =====
+        const CARD_DATABASE = {
+            president: {
+                id: 'president',
+                name: '總統',
+                type: 'batter',
+                attribute: 'human',
+                rarity: 'common',
+                stats: { attack: 15, crit: 35, hp_bonus: 10 },
+                description: '打擊：牌組中每有一張人屬性卡，攻擊力+1',
+                effects: {
+                    on_strike: function(gameState) {
+                        const humanCards = gameState.player.hand.filter(c => c.attribute === 'human').length;
+                        this.tempAttackBonus = humanCards;
+                        return {
+                            success: true,
+                            description: `人屬性卡數量：${humanCards}，攻擊力+${humanCards}`
+                        };
+                    }
+                }
+            },
+            
+            kindness: {
+                id: 'kindness',
+                name: '慈愛',
+                type: 'batter',
+                attribute: 'human',
+                rarity: 'common',
+                stats: { attack: 8, crit: 70, hp_bonus: 12 },
+                description: '輔助：人屬性打者卡本回合攻擊力+10',
+                effects: {
+                    on_support: function(gameState) {
+                        gameState.turnBuffs.push({
+                            type: 'human_batter_boost',
+                            value: 10,
+                            source: this.name
+                        });
+                        return {
+                            success: true,
+                            description: '人屬性打者卡本回合攻擊力+10'
+                        };
+                    }
+                }
+            },
+            
+            hero: {
+                id: 'hero',
+                name: '英雄',
+                type: 'batter',
+                attribute: 'human',
+                rarity: 'common',
+                stats: { attack: 25, crit: 50, hp_bonus: 10 },
+                description: '基礎打者卡，無特殊效果',
+                effects: {}
+            },
+            
+            shadow_devour: {
+                id: 'shadow_devour',
+                name: '暗影吞噬',
+                type: 'batter',
+                attribute: 'yin',
+                rarity: 'common',
+                stats: { attack: 20, crit: 35, hp_bonus: 10 },
+                description: '打擊：若本回合沒有其他陰屬卡，攻擊力+10',
+                effects: {
+                    on_strike: function(gameState) {
+                        // 簡化實現：直接給予加成
+                        this.tempAttackBonus = 10;
+                        return {
+                            success: true,
+                            description: '本回合未打出其他陰屬卡，攻擊力+10'
+                        };
+                    }
+                }
+            },
+            
+            yinyang_harmony: {
+                id: 'yinyang_harmony',
+                name: '陰陽調和',
+                type: 'batter',
+                attribute: 'yang',
+                rarity: 'rare',
+                stats: { attack: 20, crit: 25, hp_bonus: 0 },
+                description: '打擊：若輔助格為陰屬性，攻擊力翻倍',
+                effects: {
+                    on_strike: function(gameState) {
+                        const supportCard = gameState.player.support_zone;
+                        if (supportCard && supportCard.attribute === 'yin') {
+                            this.tempAttackBonus = this.stats.attack;
+                            return {
+                                success: true,
+                                description: '輔助格為陰屬性，攻擊力翻倍！'
+                            };
+                        }
+                        return { success: false, reason: '輔助格不是陰屬性' };
+                    }
+                }
+            }
+        };
+
+        // 初始牌組配置
+        const INITIAL_DECK = [
+            'president', 'president', 'kindness', 'kindness', 
+            'hero', 'hero', 'hero', 'shadow_devour', 'yinyang_harmony',
+            'president', 'kindness', 'hero', 'shadow_devour', 'yinyang_harmony', 'hero'
+        ];
+
+        // ===== 🎨 UI 工具函數 =====
+        class UIManager {
+            static generateCardClasses(attribute, rarity) {
+                const baseClasses = 'w-28 h-36 rounded-xl p-3 text-xs cursor-pointer card-hover flex flex-col justify-between';
+                
+                const attributeColors = {
+                    human: { base: 'human-base', dark: 'human-dark', text: 'human-text' },
+                    yin: { base: 'yin-base', dark: 'yin-dark', text: 'yin-text' },
+                    yang: { base: 'yang-base', dark: 'yang-dark', text: 'yang-text' }
+                };
+                
+                const rarityStyles = {
+                    common: (colors) => `bg-${colors.base}`,
+                    rare: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-lg`,
+                    legendary: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-xl ring-2 ring-legendary-ring animate-glow`
+                };
+                
+                const colors = attributeColors[attribute] || attributeColors.human;
+                const backgroundStyle = rarityStyles[rarity](colors);
+                
+                return `${baseClasses} ${backgroundStyle} text-${colors.text}`;
+            }
+
+            static renderCard(cardData, index, showDetails = true) {
+                const cardClasses = this.generateCardClasses(cardData.attribute, cardData.rarity);
+                
+                return `
+                    <div class="${cardClasses} animate-card-draw" draggable="true" data-card-index="${index}" style="animation-delay: ${index * 0.1}s">
+                        <div class="text-center mb-2">
+                            <div class="font-bold text-sm mb-1">${cardData.name}</div>
+                            <div class="text-[10px] opacity-80 bg-black/20 px-2 py-1 rounded">${cardData.attribute} • ${cardData.type}</div>
+                        </div>
+                        
+                        ${showDetails ? `
+                        <div class="flex-1 text-[10px] leading-tight opacity-90">
+                            ${cardData.description}
+                        </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-between text-[11px] font-bold mt-2 bg-black/20 p-1 rounded">
+                            <span title="攻擊力">⚔️${cardData.stats.attack}</span>
+                            <span title="暴擊值">💎${cardData.stats.crit}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            static showFloatingText(element, text, type = 'damage') {
+                const floatingText = document.createElement('div');
+                floatingText.className = `floating-text animate-${type}`;
+                floatingText.textContent = text;
+                
+                const rect = element.getBoundingClientRect();
+                floatingText.style.left = `${rect.left + rect.width / 2 - 20}px`;
+                floatingText.style.top = `${rect.top}px`;
+                
+                document.body.appendChild(floatingText);
+                
+                setTimeout(() => {
+                    if (document.body.contains(floatingText)) {
+                        document.body.removeChild(floatingText);
+                    }
+                }, 1500);
+            }
+
+            static addLog(message, type = 'info') {
+                const logContainer = document.getElementById('game-log');
+                const logEntry = document.createElement('div');
+                
+                const colors = {
+                    info: 'text-gray-300',
+                    success: 'text-green-400',
+                    damage: 'text-red-400',
+                    heal: 'text-green-400',
+                    system: 'text-blue-400',
+                    warning: 'text-yellow-400'
+                };
+                
+                logEntry.className = colors[type] || colors.info;
+                logEntry.innerHTML = `<span class="text-gray-500">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            static updatePhaseDisplay(phase) {
+                const phaseElement = document.getElementById('game-phase');
+                const descriptionElement = document.getElementById('phase-description');
+                
+                const phaseData = {
+                    'DRAW_PHASE': {
+                        name: '抽牌階段',
+                        description: '補充手牌至7張',
+                        color: 'bg-blue-600'
+                    },
+                    'PLAY_PHASE': {
+                        name: '出牌階段', 
+                        description: '拖拽卡牌到戰鬥區域',
+                        color: 'bg-green-600'
+                    },
+                    'COMBAT_PHASE': {
+                        name: '戰鬥階段',
+                        description: '計算傷害並執行攻擊',
+                        color: 'bg-red-600'
+                    }
+                };
+                
+                const data = phaseData[phase];
+                phaseElement.textContent = data.name;
+                phaseElement.className = `turn-phase-indicator text-center py-3 px-4 rounded-lg font-bold text-white ${data.color}`;
+                descriptionElement.textContent = data.description;
+            }
+        }
+
+        // ===== ⚔️ 戰鬥系統 =====
+        class CombatSystem {
+            static calculateDamage(gameState) {
+                let totalAttack = 0;
+                let totalCrit = 0;
+                const effects = [];
+                
+                // 基礎數值計算
+                const strikeCard = gameState.player.strike_zone;
+                const supportCard = gameState.player.support_zone;
+                
+                if (strikeCard) {
+                    totalAttack += strikeCard.stats.attack;
+                    totalCrit += strikeCard.stats.crit;
+                    
+                    // 觸發打擊效果
+                    if (strikeCard.effects.on_strike) {
+                        const result = strikeCard.effects.on_strike.call(strikeCard, gameState);
+                        if (result.success) {
+                            effects.push(result.description);
+                            if (strikeCard.tempAttackBonus) {
+                                totalAttack += strikeCard.tempAttackBonus;
+                            }
+                        }
+                    }
+                }
+                
+                if (supportCard) {
+                    totalAttack += supportCard.stats.attack;
+                    totalCrit += supportCard.stats.crit;
+                    
+                    // 觸發輔助效果
+                    if (supportCard.effects.on_support) {
+                        const result = supportCard.effects.on_support.call(supportCard, gameState);
+                        if (result.success) {
+                            effects.push(result.description);
+                        }
+                    }
+                }
+                
+                // 應用回合Buff
+                gameState.turnBuffs.forEach(buff => {
+                    if (buff.type === 'human_batter_boost' && strikeCard && strikeCard.attribute === 'human') {
+                        totalAttack += buff.value;
+                        effects.push(`${buff.source}：人屬性打者+${buff.value}攻擊力`);
+                    }
+                });
+                
+                // 計算最終傷害
+                let finalDamage = totalAttack * (1 + totalCrit / 100);
+                
+                // 屬性克制
+                const playerAttr = strikeCard ? strikeCard.attribute : 'human';
+                if (this.isStrongAgainst(playerAttr, gameState.pitcher.attribute)) {
+                    finalDamage *= 1.2;
+                    effects.push(`屬性克制：${playerAttr} 克制 ${gameState.pitcher.attribute}，傷害+20%`);
+                }
+                
+                return {
+                    finalDamage: Math.round(finalDamage),
+                    breakdown: {
+                        baseAttack: totalAttack,
+                        baseCrit: totalCrit,
+                        effects: effects
+                    }
+                };
+            }
+            
+            static isStrongAgainst(playerAttr, enemyAttr) {
+                const advantages = {
+                    'human': ['yin'],
+                    'yin': ['yang'], 
+                    'yang': ['heaven'],
+                    'heaven': ['earth'],
+                    'earth': ['human']
+                };
+                return advantages[playerAttr]?.includes(enemyAttr) || false;
+            }
+            
+            static calculatePitcherDamage(gameState) {
+                let damage = gameState.pitcher.current_attack;
+                
+                // 應用屬性克制（玩家被克制時傷害減少）
+                const playerAttr = gameState.player.strike_zone ? gameState.player.strike_zone.attribute : 'human';
+                if (this.isStrongAgainst(gameState.pitcher.attribute, playerAttr)) {
+                    damage *= 0.8;
+                }
+                
+                return Math.round(damage);
+            }
+        }
+
+        // ===== 🎯 回合系統 =====
+        class TurnSystem {
+            static async processTurn(gameState) {
+                UIManager.addLog(`🔄 第 ${gameState.turnCount} 回合開始`, 'system');
+                
+                // 1. 回合開始階段
+                gameState.gamePhase = 'DRAW_PHASE';
+                UIManager.updatePhaseDisplay(gameState.gamePhase);
+                
+                // 2. 抽牌階段
+                await this.drawPhase(gameState);
+                
+                // 3. 切換到出牌階段
+                gameState.gamePhase = 'PLAY_PHASE';
+                UIManager.updatePhaseDisplay(gameState.gamePhase);
+                
+                GameController.updateAllDisplays();
+            }
+            
+            static async drawPhase(gameState) {
+                const handSizeLimit = 7;
+                const drawCount = handSizeLimit - gameState.player.hand.length;
+                
+                if (drawCount > 0) {
+                    UIManager.addLog(`🎴 抽牌階段：需要抽 ${drawCount} 張牌`, 'system');
+                    
+                    for (let i = 0; i < drawCount; i++) {
+                        if (!this.drawSingleCard(gameState)) {
+                            UIManager.addLog('⚠️ 無法繼續抽牌，牌庫已空', 'warning');
+                            break;
+                        }
+                        // 延遲以展示抽牌動畫
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        GameController.updateHandDisplay();
+                    }
+                }
+            }
+            
+            static drawSingleCard(gameState) {
+                // 如果牌庫為空，重新洗牌
+                if (gameState.player.deck.length === 0) {
+                    if (gameState.player.discard_pile.length === 0) {
+                        return false;
+                    }
+                    
+                    UIManager.addLog('🔀 牌庫為空，重新洗牌...', 'system');
+                    gameState.player.deck = [...gameState.player.discard_pile];
+                    gameState.player.discard_pile = [];
+                    this.shuffleDeck(gameState.player.deck);
+                }
+                
+                if (gameState.player.deck.length > 0) {
+                    const cardId = gameState.player.deck.pop();
+                    const fullCard = { ...CARD_DATABASE[cardId] };
+                    gameState.player.hand.push(fullCard);
+                    
+                    UIManager.addLog(`🎴 抽到：${fullCard.name}`, 'success');
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            static shuffleDeck(deck) {
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+            }
+            
+            static async endTurn(gameState) {
+                UIManager.addLog('🌙 回合結束階段開始', 'system');
+                gameState.gamePhase = 'END_TURN';
+                UIManager.updatePhaseDisplay({ 'END_TURN': { name: '回合結束', description: '清理效果並準備下回合', color: 'bg-purple-600' } }['END_TURN']);
+                
+                // 1. 移動場上卡牌到棄牌堆
+                this.moveCardsToDiscard(gameState);
+                
+                // 2. 投手疲勞
+                const oldAttack = gameState.pitcher.current_attack;
+                gameState.pitcher.current_attack = Math.round(gameState.pitcher.current_attack * 0.95);
+                UIManager.addLog(`😴 投手疲勞：攻擊力 ${oldAttack} → ${gameState.pitcher.current_attack}`, 'system');
+                
+                // 3. 清理臨時效果
+                this.cleanupTurnEffects(gameState);
+                
+                // 4. 增加回合計數
+                gameState.turnCount++;
+                
+                // 5. 開始新回合
+                setTimeout(() => {
+                    this.processTurn(gameState);
+                }, 1500);
+                
+                GameController.updateAllDisplays();
+            }
+            
+            static moveCardsToDiscard(gameState) {
+                const zones = ['strike_zone', 'support_zone', 'spell_zone'];
+                let movedCards = 0;
+                
+                zones.forEach(zone => {
+                    if (gameState.player[zone]) {
+                        const card = gameState.player[zone];
+                        gameState.player.discard_pile.push(card);
+                        gameState.player[zone] = null;
+                        UIManager.addLog(`🗂️ ${card.name} 移入棄牌堆`, 'system');
+                        movedCards++;
+                    }
+                });
+                
+                if (movedCards === 0) {
+                    UIManager.addLog('📝 沒有卡牌需要移入棄牌堆', 'system');
+                }
+            }
+            
+            static cleanupTurnEffects(gameState) {
+                // 清理回合Buff
+                gameState.turnBuffs = [];
+                
+                // 清理卡牌臨時效果
+                gameState.player.hand.forEach(card => {
+                    delete card.tempAttackBonus;
+                });
+            }
+        }
+
+        // ===== 🎮 遊戲控制器 =====
+        class GameController {
+            static gameState = new GameState();
+            
+            static initialize() {
+                // 初始化牌組
+                this.gameState.player.deck = [...INITIAL_DECK];
+                TurnSystem.shuffleDeck(this.gameState.player.deck);
+                
+                // 設置事件監聽
+                this.setupEventListeners();
+                
+                // 開始第一回合
+                TurnSystem.processTurn(this.gameState);
+                
+                UIManager.addLog('🚀 遊戲初始化完成', 'system');
+            }
+            
+            static setupEventListeners() {
+                // 攻擊按鈕
+                document.getElementById('attack-btn').addEventListener('click', () => {
+                    this.executeAttack();
+                });
+                
+                // 結束回合按鈕
+                document.getElementById('end-turn-btn').addEventListener('click', () => {
+                    TurnSystem.endTurn(this.gameState);
+                });
+                
+                // 重置按鈕
+                document.getElementById('reset-btn').addEventListener('click', () => {
+                    if (confirm('確定要重置遊戲嗎？')) {
+                        this.resetGame();
+                    }
+                });
+                
+                // 設置拖放
+                this.setupDragAndDrop();
+            }
+            
+            static setupDragAndDrop() {
+                const zones = ['strike-zone', 'support-zone', 'spell-zone'];
+                
+                zones.forEach(zoneId => {
+                    const zone = document.getElementById(zoneId);
+                    
+                    zone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        zone.classList.add('drag-over');
+                    });
+
+                    zone.addEventListener('dragleave', () => {
+                        zone.classList.remove('drag-over');
+                    });
+
+                    zone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        zone.classList.remove('drag-over');
+                        
+                        const cardIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                        const targetZone = zone.dataset.zone;
+                        
+                        this.playCard(cardIndex, targetZone);
+                    });
+                });
+            }
+            
+            static playCard(cardIndex, targetZone) {
+                const card = this.gameState.player.hand[cardIndex];
+                if (!card) {
+                    UIManager.addLog('❌ 無效的卡牌索引', 'damage');
+                    return;
+                }
+                
+                // 檢查遊戲階段
+                if (this.gameState.gamePhase !== 'PLAY_PHASE') {
+                    UIManager.addLog('❌ 不在出牌階段！', 'damage');
+                    return;
+                }
+                
+                // 檢查區域是否已有卡牌
+                if (this.gameState.player[targetZone]) {
+                    UIManager.addLog('❌ 該區域已有卡牌！', 'damage');
+                    return;
+                }
+                
+                // 檢查卡牌類型是否匹配
+                const validPlacements = {
+                    'strike_zone': ['batter'],
+                    'support_zone': ['batter', 'support'],
+                    'spell_zone': ['spell']                };
+                
+                if (!validPlacements[targetZone].includes(card.type)) {
+                    UIManager.addLog('❌ 卡牌類型不匹配！', 'damage');
+                    return;
+                }
+                
+                // 放置卡牌
+                this.gameState.player[targetZone] = card;
+                this.gameState.player.hand.splice(cardIndex, 1);
+                
+                const zoneNames = {
+                    'strike_zone': '打擊區',
+                    'support_zone': '輔助區', 
+                    'spell_zone': '法術區'
+                };
+                
+                UIManager.addLog(`🎴 ${card.name} 放置到${zoneNames[targetZone]}`, 'success');
+                this.updateAllDisplays();
+            }
+            
+            static executeAttack() {
+                if (this.gameState.gamePhase !== 'PLAY_PHASE') {
+                    UIManager.addLog('❌ 不在出牌階段！', 'damage');
+                    return;
+                }
+                
+                if (!this.gameState.player.strike_zone) {
+                    UIManager.addLog('❌ 請先放置打擊卡牌！', 'damage');
+                    return;
+                }
+                
+                // 切換到戰鬥階段
+                this.gameState.gamePhase = 'COMBAT_PHASE';
+                UIManager.updatePhaseDisplay(this.gameState.gamePhase);
+                
+                // 執行戰鬥
+                this.executeCombat();
+            }
+            
+            static executeCombat() {
+                UIManager.addLog('⚔️ 戰鬥開始！', 'system');
+                
+                // 計算玩家傷害
+                const damageResult = CombatSystem.calculateDamage(this.gameState);
+                
+                // 顯示效果說明
+                damageResult.breakdown.effects.forEach(effect => {
+                    UIManager.addLog(`✨ ${effect}`, 'success');
+                });
+                
+                // 對投手造成傷害
+                this.gameState.pitcher.current_hp -= damageResult.finalDamage;
+                this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp);
+                
+                UIManager.addLog(`💥 對投手造成 ${damageResult.finalDamage} 點傷害！`, 'damage');
+                UIManager.showFloatingText(document.getElementById('pitcher-hp'), `-${damageResult.finalDamage}`, 'damage');
+                
+                // 震動效果
+                document.getElementById('pitcher-hp-bar').classList.add('animate-shake');
+                setTimeout(() => {
+                    document.getElementById('pitcher-hp-bar').classList.remove('animate-shake');
+                }, 500);
+                
+                // 檢查投手是否被擊敗
+                if (this.gameState.pitcher.current_hp <= 0) {
+                    UIManager.addLog('🏆 勝利！投手被擊敗了！', 'success');
+                    setTimeout(() => {
+                        alert('🎉 恭喜勝利！\n\n在完整版本中，這裡將進入獎勵選擇階段。');
+                    }, 1000);
+                    this.updateAllDisplays();
+                    return;
+                }
+                
+                // 投手反擊
+                setTimeout(() => {
+                    this.pitcherAttack();
+                }, 1000);
+                
+                this.updateAllDisplays();
+            }
+            
+            static pitcherAttack() {
+                const pitcherDamage = CombatSystem.calculatePitcherDamage(this.gameState);
+                
+                this.gameState.player.current_hp -= pitcherDamage;
+                this.gameState.player.current_hp = Math.max(0, this.gameState.player.current_hp);
+                
+                UIManager.addLog(`💢 投手反擊！受到 ${pitcherDamage} 點傷害！`, 'damage');
+                UIManager.showFloatingText(document.getElementById('player-hp'), `-${pitcherDamage}`, 'damage');
+                
+                // 震動效果
+                document.getElementById('player-hp-bar').classList.add('animate-shake');
+                setTimeout(() => {
+                    document.getElementById('player-hp-bar').classList.remove('animate-shake');
+                }, 500);
+                
+                // 檢查玩家是否被擊敗
+                if (this.gameState.player.current_hp <= 0) {
+                    UIManager.addLog('💀 失敗！你被擊敗了！', 'damage');
+                    setTimeout(() => {
+                        alert('💀 遊戲結束！\n\n點擊重置開始新遊戲。');
+                    }, 1000);
+                    this.updateAllDisplays();
+                    return;
+                }
+                
+                this.updateAllDisplays();
+                
+                // 自動結束回合
+                setTimeout(() => {
+                    TurnSystem.endTurn(this.gameState);
+                }, 1500);
+            }
+            
+            static resetGame() {
+                this.gameState = new GameState();
+                document.getElementById('game-log').innerHTML = '';
+                this.initialize();
+                UIManager.addLog('🔄 遊戲已重置', 'system');
+            }
+            
+            static updateAllDisplays() {
+                this.updateHandDisplay();
+                this.updateBattleZones();
+                this.updateStatusDisplay();
+                this.updateCounters();
+            }
+            
+            static updateHandDisplay() {
+                const handContainer = document.getElementById('hand-cards');
+                const handCountElement = document.getElementById('hand-count');
+                
+                handContainer.innerHTML = this.gameState.player.hand
+                    .map((card, index) => UIManager.renderCard(card, index))
+                    .join('');
+                
+                handCountElement.textContent = this.gameState.player.hand.length;
+                
+                // 重新綁定拖拽事件
+                this.bindCardDragEvents();
+            }
+            
+            static bindCardDragEvents() {
+                const cards = document.querySelectorAll('[data-card-index]');
+                cards.forEach(card => {
+                    card.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', e.target.dataset.cardIndex);
+                    });
+                });
+            }
+            
+            static updateBattleZones() {
+                const zones = ['strike_zone', 'support_zone', 'spell_zone'];
+                const zoneNames = { 
+                    strike_zone: '打擊區', 
+                    support_zone: '輔助區', 
+                    spell_zone: '法術區' 
+                };
+                const zoneIcons = { 
+                    strike_zone: '🗡️', 
+                    support_zone: '🛡️', 
+                    spell_zone: '✨' 
+                };
+                
+                zones.forEach(zone => {
+                    const zoneElement = document.getElementById(zone.replace('_', '-'));
+                    const card = this.gameState.player[zone];
+                    
+                    if (card) {
+                        zoneElement.innerHTML = UIManager.renderCard(card, -1, false);
+                        zoneElement.classList.add('card-zone-occupied');
+                    } else {
+                        zoneElement.innerHTML = `
+                            <div class="text-center text-gray-400">
+                                <div class="text-3xl mb-2">${zoneIcons[zone]}</div>
+                                <div class="text-sm">拖拽${zone === 'strike_zone' ? '打者' : zone === 'support_zone' ? '輔助' : '法術'}卡到此處</div>
+                            </div>
+                        `;
+                        zoneElement.classList.remove('card-zone-occupied');
+                    }
+                });
+            }
+            
+            static updateStatusDisplay() {
+                // 更新玩家狀態
+                document.getElementById('player-hp').textContent = 
+                    `${this.gameState.player.current_hp}/${this.gameState.player.max_hp}`;
+                document.getElementById('player-hp-bar').style.width = 
+                    `${(this.gameState.player.current_hp / this.gameState.player.max_hp) * 100}%`;
+                
+                // 更新投手狀態
+                document.getElementById('pitcher-hp').textContent = 
+                    `${this.gameState.pitcher.current_hp}/${this.gameState.pitcher.max_hp}`;
+                document.getElementById('pitcher-hp-bar').style.width = 
+                    `${(this.gameState.pitcher.current_hp / this.gameState.pitcher.max_hp) * 100}%`;
+                document.getElementById('pitcher-attack').textContent = this.gameState.pitcher.current_attack;
+                document.getElementById('pitcher-attribute').textContent = this.gameState.pitcher.attribute;
+            }
+            
+            static updateCounters() {
+                document.getElementById('turn-counter').textContent = this.gameState.turnCount;
+                document.getElementById('deck-count').textContent = this.gameState.player.deck.length;
+                document.getElementById('discard-count').textContent = this.gameState.player.discard_pile.length;
+            }
+        }
+
+        // ===== 🚀 遊戲啟動 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            GameController.initialize();
+            
+            // 添加調試功能
+            window.gameDebug = {
+                state: GameController.gameState,
+                addCard: (cardId) => {
+                    if (CARD_DATABASE[cardId] && GameController.gameState.player.hand.length < 7) {
+                        GameController.gameState.player.hand.push({ ...CARD_DATABASE[cardId] });
+                        GameController.updateAllDisplays();
+                        UIManager.addLog(`🔧 調試：添加了 ${CARD_DATABASE[cardId].name}`, 'system');
+                    }
+                },
+                damage: (amount) => {
+                    GameController.gameState.pitcher.current_hp -= amount;
+                    GameController.gameState.pitcher.current_hp = Math.max(0, GameController.gameState.pitcher.current_hp);
+                    GameController.updateAllDisplays();
+                    UIManager.addLog(`🔧 調試：對投手造成 ${amount} 點傷害`, 'system');
+                },
+                heal: (amount) => {
+                    GameController.gameState.player.current_hp += amount;
+                    GameController.gameState.player.current_hp = Math.min(GameController.gameState.player.max_hp, GameController.gameState.player.current_hp);
+                    GameController.updateAllDisplays();
+                    UIManager.addLog(`🔧 調試：回復 ${amount} 點生命值`, 'system');
+                }
+            };
+            
+            UIManager.addLog('🎮 歡迎來到 MyGO!!!!! Roguelike TCG！', 'success');
+            UIManager.addLog('💡 提示：將卡牌拖拽到戰鬥區域，然後點擊攻擊！', 'system');
+        });
+
+    </script>
 </body>
 </html>
+
+        //
