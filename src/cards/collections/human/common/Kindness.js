@@ -1,13 +1,11 @@
-// cards/collections/human/common/Kindness.js
-import { CARD_BALANCE, GAME_BALANCE } from '../../../../data/balance/CardBalance.js';
-
+// 2. 修復 src/cards/collections/human/common/Kindness.js - 移除測試文字
 export class KindnessCard {
   static create() {
     const balance = CARD_BALANCE.KINDNESS;
     
     return {
       id: 'kindness',
-      name: '慈愛afasdfasdfasfdasdf',
+      name: '慈愛', // 移除了測試文字
       type: 'batter',
       attribute: 'human',
       rarity: 'common',
@@ -20,15 +18,17 @@ export class KindnessCard {
       
       effects: {
         on_support: async function(gameState) {
-          // 為本回合的人屬性打者卡添加攻擊力加成
           gameState.turnBuffs = gameState.turnBuffs || [];
           gameState.turnBuffs.push({
             type: 'human_batter_attack_boost',
-            value: GAME_BALANCE.KINDNESS_BOOST,
+            value: GAME_BALANCE.KINDNESS_BOOST || 10,
             source: this.name
           });
           
-          return { success: true, description: '人屬性打者卡本回合攻擊力+10' };
+          return { 
+            success: true, 
+            description: '人屬性打者卡本回合攻擊力+10' 
+          };
         }
       }
     };

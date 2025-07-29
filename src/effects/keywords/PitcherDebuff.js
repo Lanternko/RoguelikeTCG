@@ -1,10 +1,10 @@
-// effects/keywords/PitcherDebuff.js
+// 4. 修復 src/effects/keywords/PitcherDebuff.js - 修正gameState路徑
 export class PitcherDebuffKeyword {
   // 暗影吞噬輔助：投手攻擊力-3
   static async reducePitcherAttack(gameState, amount = 3) {
-    gameState.cpu.activePitcher.tempDebuff = gameState.cpu.activePitcher.tempDebuff || {};
-    gameState.cpu.activePitcher.tempDebuff.attack = 
-      (gameState.cpu.activePitcher.tempDebuff.attack || 0) - amount;
+    gameState.pitcher.tempDebuff = gameState.pitcher.tempDebuff || {};
+    gameState.pitcher.tempDebuff.attack = 
+      (gameState.pitcher.tempDebuff.attack || 0) - amount;
     
     return { success: true, description: `投手攻擊力-${amount}` };
   }
@@ -23,9 +23,15 @@ export class PitcherDebuffKeyword {
   
   // 偷襲：直接降低投手10點血量
   static async directDamagePitcher(gameState, damage = 10) {
-    gameState.cpu.activePitcher.current_hp -= damage;
-    gameState.cpu.activePitcher.current_hp = Math.max(0, gameState.cpu.activePitcher.current_hp);
+    gameState.pitcher.current_hp -= damage;
+    gameState.pitcher.current_hp = Math.max(0, gameState.pitcher.current_hp);
     
     return { success: true, description: `直接對投手造成${damage}點傷害` };
+  }
+  
+  // 時間暫停：投手跳過下一回合
+  static async skipPitcherTurn(gameState) {
+    gameState.pitcher.skipNextTurn = true;
+    return { success: true, description: '投手將跳過下一回合' };
   }
 }

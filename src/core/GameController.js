@@ -1,15 +1,34 @@
-// core/GameController.js - 整合所有系統
+// 5. 修復 src/core/GameController.js - 添加缺失的導入
+import { EventBus } from './EventBus.js';
+import { GameState } from './GameState.js';
+import { CombatSystem } from '../systems/CombatSystem.js';
+import { TurnSystem } from '../systems/TurnSystem.js';
 import { CardRegistry } from '../cards/CardRegistry.js';
+import { GAME_BALANCE } from '../data/balance/GameBalance.js';
 
 export class GameController {
   constructor() {
+    console.log('🎮 初始化遊戲控制器...');
+    
+    // 初始化核心系統
     this.eventBus = new EventBus();
+    this.gameState = new GameState();
+    
+    // 初始化子系統
     this.combatSystem = new CombatSystem(this.eventBus);
     this.turnSystem = new TurnSystem(this.eventBus);
-    this.gameState = this.createInitialGameState();
     
+    // 初始化卡牌系統
+    CardRegistry.initialize();
+    
+    // 設置事件監聽
     this.setupEventListeners();
-    console.log('🎮 遊戲控制器初始化完成');
+    
+    // 遊戲狀態
+    this.isGameRunning = false;
+    this.gameStartTime = null;
+    
+    console.log('✅ 遊戲控制器初始化完成');
   }
 
   /**
