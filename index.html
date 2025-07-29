@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roguelike TCG v2 - 輕量化架構演示</title>
+    <title>🎸 MyGO!!!!! TCG v2 - 完整戰鬥系統演示</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
             color: #fff;
             margin: 0;
             padding: 20px;
@@ -15,17 +15,21 @@
         }
 
         .game-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+            border: 2px solid #4a5a6a;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            border-radius: 15px;
         }
 
         .header h1 {
@@ -37,110 +41,206 @@
             background-clip: text;
         }
 
-        .header p {
-            margin: 10px 0;
-            opacity: 0.8;
-            font-size: 1.1rem;
+        .game-status {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
-        #player-status {
-            display: flex;
-            justify-content: space-around;
+        .player-info, .pitcher-info {
             background: rgba(255, 255, 255, 0.1);
             padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .status-item {
             text-align: center;
         }
 
-        .status-label {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-bottom: 5px;
+        .player-info {
+            border-left: 4px solid #27ae60;
         }
 
-        .status-value {
-            font-size: 1.5rem;
-            font-weight: bold;
+        .pitcher-info {
+            border-left: 4px solid #e74c3c;
         }
 
-        .health { color: #e74c3c; }
-        .energy { color: #3498db; }
-        .gold { color: #f1c40f; }
-
-        #hand {
-            display: flex;
-            gap: 15px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
+        .combat-log {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .hp-bar {
+            width: 100%;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            transition: width 0.5s ease;
+        }
+
+        .battle-field {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
             min-height: 200px;
         }
 
-        .card {
-            min-width: 150px;
-            width: 150px;
-            height: 200px;
+        .zone {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed #4a5a6a;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .zone.strike-zone {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .zone.support-zone {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .zone.spell-zone {
+            border-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .zone.drag-over {
+            border-style: solid;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .zone-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .zone-card {
             background: linear-gradient(145deg, #2c3e50, #34495e);
             border: 2px solid #3498db;
             border-radius: 10px;
             padding: 10px;
-            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .zone-card.batter { border-color: #e74c3c; }
+        .zone-card.support { border-color: #3498db; }
+        .zone-card.spell { border-color: #9b59b6; }
+
+        .card-stats {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .hand {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            overflow-x: auto;
+            min-height: 200px;
+            border: 2px solid #4a5a6a;
+        }
+
+        .card {
+            min-width: 140px;
+            width: 140px;
+            height: 200px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border: 2px solid #3498db;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: grab;
             transition: all 0.3s ease;
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            user-select: none;
         }
 
         .card:hover {
-            transform: translateY(-10px) scale(1.05);
-            box-shadow: 0 15px 30px rgba(52, 152, 219, 0.4);
+            transform: translateY(-15px) scale(1.08);
+            box-shadow: 0 20px 40px rgba(52, 152, 219, 0.4);
+            z-index: 100;
         }
 
-        .card.attack { border-color: #e74c3c; }
-        .card.skill { border-color: #27ae60; }
-        .card.power { border-color: #9b59b6; }
+        .card.dragging {
+            opacity: 0.7;
+            transform: rotate(8deg) scale(1.1);
+            z-index: 1000;
+        }
+
+        .card.batter { border-color: #e74c3c; }
+        .card.support { border-color: #3498db; }
+        .card.spell { border-color: #9b59b6; }
 
         .card.rare {
             background: linear-gradient(145deg, #8e44ad, #9b59b6);
-            box-shadow: 0 0 20px rgba(155, 89, 182, 0.3);
+            box-shadow: 0 0 25px rgba(155, 89, 182, 0.4);
         }
 
         .card.legendary {
             background: linear-gradient(145deg, #f39c12, #e67e22);
-            box-shadow: 0 0 25px rgba(243, 156, 18, 0.4);
+            box-shadow: 0 0 30px rgba(243, 156, 18, 0.5);
+            animation: legendary-glow 2s infinite alternate;
         }
 
-        .card-cost {
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            width: 30px;
-            height: 30px;
-            background: #3498db;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
+        @keyframes legendary-glow {
+            0% { box-shadow: 0 0 20px rgba(243, 156, 18, 0.5); }
+            100% { box-shadow: 0 0 40px rgba(243, 156, 18, 0.8); }
         }
 
         .card-name {
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1rem;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .card-type {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .card-stats {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            text-align: center;
+            margin: 8px 0;
+            line-height: 1.3;
         }
 
         .card-description {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             line-height: 1.3;
             opacity: 0.9;
             text-align: center;
@@ -148,328 +248,743 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 4px;
         }
 
-        #combat-area {
-            background: rgba(231, 76, 60, 0.1);
-            border: 2px solid #e74c3c;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
         }
 
-        .enemy {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .enemy-name {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #e74c3c;
-            margin-bottom: 10px;
-        }
-
-        .enemy-health {
-            font-size: 1.3rem;
-            background: rgba(231, 76, 60, 0.2);
-            padding: 10px;
-            border-radius: 8px;
-            display: inline-block;
-        }
-
-        .combat-actions {
-            text-align: center;
-        }
-
-        button {
+        .btn {
             background: linear-gradient(145deg, #3498db, #2980b9);
             color: white;
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
             font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        button:hover {
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(145deg, #2980b9, #3498db);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
         }
 
-        button:active {
-            transform: translateY(0);
+        .btn:disabled {
+            background: linear-gradient(145deg, #7f8c8d, #95a5a6);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        #map-area {
-            background: rgba(39, 174, 96, 0.1);
-            border: 2px solid #27ae60;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
+        .btn.attack {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
         }
 
-        .current-floor {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #27ae60;
-            margin-bottom: 15px;
+        .btn.attack:hover:not(:disabled) {
+            background: linear-gradient(145deg, #c0392b, #e74c3c);
         }
 
-        .demo-controls {
-            text-align: center;
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+        .status-effects {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
         }
 
-        .demo-controls h3 {
-            color: #f1c40f;
-            margin-bottom: 15px;
-        }
-
-        .log {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-        }
-
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 2px 5px;
-            border-left: 3px solid #3498db;
-            padding-left: 10px;
-        }
-
-        .log-entry.combat { border-color: #e74c3c; }
-        .log-entry.system { border-color: #f1c40f; }
-        .log-entry.effect { border-color: #9b59b6; }
-
-        @keyframes cardPlay {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2) rotate(5deg); }
-            100% { transform: scale(1); }
-        }
-
-        .card.playing {
-            animation: cardPlay 0.6s ease-in-out;
-        }
-
-        @keyframes damage {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-50px); opacity: 0; }
+        .effect {
+            background: rgba(155, 89, 182, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
         }
 
         .damage-number {
-            position: absolute;
-            color: #e74c3c;
+            position: fixed;
+            font-size: 2rem;
             font-weight: bold;
-            font-size: 1.5rem;
-            animation: damage 1s ease-out forwards;
+            z-index: 10000;
             pointer-events: none;
-            z-index: 1000;
+            animation: damage-float 2s ease-out forwards;
+        }
+
+        .damage-number.damage {
+            color: #e74c3c;
+            text-shadow: 0 0 10px #e74c3c;
+        }
+
+        .damage-number.heal {
+            color: #27ae60;
+            text-shadow: 0 0 10px #27ae60;
+        }
+
+        @keyframes damage-float {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .game-over-content {
+            text-align: center;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #f39c12;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            padding: 2px 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 8px;
+            font-size: 0.85rem;
+        }
+
+        .log-entry.damage { border-color: #e74c3c; color: #e74c3c; }
+        .log-entry.heal { border-color: #27ae60; color: #27ae60; }
+        .log-entry.effect { border-color: #9b59b6; color: #9b59b6; }
+        .log-entry.system { border-color: #f39c12; color: #f39c12; }
+
+        @media (max-width: 768px) {
+            .battle-field {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .game-status {
+                grid-template-columns: 1fr;
+            }
+            
+            .hand {
+                padding: 10px;
+            }
+            
+            .card {
+                min-width: 120px;
+                width: 120px;
+                height: 170px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="header">
-            <h1>🎮 Roguelike TCG v2</h1>
-            <p>輕量化架構演示 - 分層清晰、易於擴展</p>
+            <h1>🎸 MyGO!!!!! TCG v2</h1>
+            <p>完整戰鬥系統演示 - 技術規格書精確實現</p>
         </div>
 
-        <div id="player-status">
-            <div class="status-item health">
-                <div class="status-label">生命值</div>
-                <div class="status-value">100/100</div>
+        <div class="game-status">
+            <div class="player-info">
+                <h3>🎸 玩家</h3>
+                <div class="hp-bar">
+                    <div class="hp-fill" id="player-hp-fill" style="width: 100%"></div>
+                </div>
+                <div id="player-hp">100 / 100</div>
+                <div class="status-effects" id="player-buffs"></div>
             </div>
-            <div class="status-item energy">
-                <div class="status-label">能量</div>
-                <div class="status-value">3/3</div>
+
+            <div class="combat-log" id="combat-log">
+                <div class="log-entry system">🚀 遊戲系統初始化完成</div>
+                <div class="log-entry">📋 技術規格書戰鬥公式載入</div>
+                <div class="log-entry">🎯 等待玩家操作...</div>
             </div>
-            <div class="status-item gold">
-                <div class="status-label">金幣</div>
-                <div class="status-value">0</div>
+
+            <div class="pitcher-info">
+                <h3>⚾ 投手</h3>
+                <div class="hp-bar">
+                    <div class="hp-fill" id="pitcher-hp-fill" style="width: 100%"></div>
+                </div>
+                <div id="pitcher-hp">150 / 150</div>
+                <div id="pitcher-attack">攻擊力: 30</div>
+                <div class="status-effects" id="pitcher-debuffs"></div>
             </div>
         </div>
 
-        <div id="hand">
+        <div class="battle-field">
+            <div class="zone support-zone" id="support-zone" data-zone="support_zone">
+                <div class="zone-title">🛡️ 輔助區</div>
+                <div class="zone-description">拖拽輔助卡或打者卡到這裡</div>
+            </div>
+
+            <div class="zone strike-zone" id="strike-zone" data-zone="strike_zone">
+                <div class="zone-title">⚔️ 打擊區</div>
+                <div class="zone-description">拖拽打者卡到這裡進行攻擊</div>
+            </div>
+
+            <div class="zone spell-zone" id="spell-zone" data-zone="spell_zone">
+                <div class="zone-title">✨ 法術區</div>
+                <div class="zone-description">拖拽法術卡到這裡</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn attack" id="attack-btn" disabled>⚔️ 攻擊</button>
+            <button class="btn" id="new-turn-btn">🔄 新回合</button>
+            <button class="btn" id="reset-btn">🆕 重新開始</button>
+        </div>
+
+        <div class="hand" id="hand">
             <!-- 手牌會在這裡動態生成 -->
-        </div>
-
-        <div id="combat-area" style="display:none;">
-            <div class="enemy">
-                <div class="enemy-name">哥布林</div>
-                <div class="enemy-health">30/30</div>
-            </div>
-            <div class="combat-actions">
-                <button id="end-turn">結束回合</button>
-            </div>
-        </div>
-
-        <div id="map-area">
-            <div class="current-floor">第 1 層</div>
-            <div class="encounters">
-                <p>準備進入戰鬥...</p>
-            </div>
-        </div>
-
-        <div class="demo-controls">
-            <h3>🔧 演示控制</h3>
-            <button onclick="startNewGame()">開始新遊戲</button>
-            <button onclick="addRandomCard()">添加隨機卡牌</button>
-            <button onclick="showArchitecture()">顯示架構說明</button>
-        </div>
-
-        <div class="log" id="game-log">
-            <div class="log-entry system">🚀 遊戲系統初始化完成</div>
-            <div class="log-entry">📦 輕量化架構載入成功</div>
-            <div class="log-entry">🎯 事件系統已就緒</div>
-            <div class="log-entry combat">⚔️ 準備開始戰鬥...</div>
         </div>
     </div>
 
     <script type="module">
-        // === 簡化的演示版本 ===
+        // ===== 🎮 完整遊戲實現 =====
         
-        class DemoGame {
+        // 簡化的事件系統
+        class EventBus {
             constructor() {
-                this.state = {
-                    player: {
-                        health: 100,
-                        maxHealth: 100,
-                        energy: 3,
-                        maxEnergy: 3,
-                        gold: 0,
-                        hand: []
-                    },
-                    combat: {
-                        active: false,
-                        enemy: null,
-                        turn: 1
+                this.listeners = new Map();
+            }
+            
+            on(event, callback) {
+                if (!this.listeners.has(event)) {
+                    this.listeners.set(event, []);
+                }
+                this.listeners.get(event).push(callback);
+            }
+            
+            emit(event, data) {
+                const callbacks = this.listeners.get(event) || [];
+                callbacks.forEach(callback => callback(data));
+            }
+        }
+
+        // 遊戲常數
+        const GAME_BALANCE = {
+            PLAYER_INITIAL_HP: 100,
+            PITCHER_INITIAL_HP: 150,
+            HAND_SIZE_LIMIT: 7,
+            PITCHER_BASE_FATIGUE_RATE: 0.05
+        };
+
+        // 完整的戰鬥系統
+        class CombatSystem {
+            constructor(eventBus) {
+                this.eventBus = eventBus;
+            }
+
+            calculateDamage(gameState) {
+                console.log('⚔️ 開始傷害計算...');
+                
+                // Step 1: 初始化基礎值
+                let totalAttack = 0;
+                let totalCrit = 0;
+                
+                const strikeCard = gameState.player.strike_zone[0];
+                const supportCard = gameState.player.support_zone[0];
+                
+                if (strikeCard) {
+                    totalAttack += strikeCard.stats.attack;
+                    totalCrit += strikeCard.stats.crit;
+                    console.log(`🗡️ 打擊區: ${strikeCard.name} - 攻擊:${strikeCard.stats.attack} 暴擊:${strikeCard.stats.crit}`);
+                }
+                
+                if (supportCard) {
+                    totalAttack += supportCard.stats.attack;
+                    totalCrit += supportCard.stats.crit;
+                    console.log(`🛡️ 輔助區: ${supportCard.name} - 攻擊:${supportCard.stats.attack} 暴擊:${supportCard.stats.crit}`);
+                }
+
+                // Step 2: 應用效果與Buff
+                const modifiedStats = this.applyEffectsAndBuffs(gameState, totalAttack, totalCrit, strikeCard, supportCard);
+                totalAttack = modifiedStats.attack;
+                totalCrit = modifiedStats.crit;
+
+                // Step 3: 核心公式
+                let finalDamage = totalAttack * (1 + totalCrit / 100);
+                console.log(`🧮 核心公式: ${totalAttack} * (1 + ${totalCrit}/100) = ${finalDamage}`);
+
+                // Step 4: 屬性克制
+                const playerAttr = this.getPlayerMainAttribute(gameState);
+                const pitcherAttr = gameState.pitcher.attribute;
+                
+                if (this.isStrongAgainst(playerAttr, pitcherAttr)) {
+                    finalDamage *= 1.2;
+                    console.log(`⚡ 屬性克制: ${playerAttr} 克制 ${pitcherAttr}, 傷害 x1.2`);
+                }
+
+                // Step 5: 四捨五入取整
+                finalDamage = Math.round(finalDamage);
+                console.log(`🎯 最終傷害: ${finalDamage}`);
+
+                return {
+                    finalDamage,
+                    breakdown: {
+                        baseAttack: totalAttack,
+                        baseCrit: totalCrit,
+                        critMultiplier: (1 + totalCrit / 100),
+                        attributeBonus: this.isStrongAgainst(playerAttr, pitcherAttr) ? 1.2 : 1.0
                     }
                 };
-                
-                this.setupStarterDeck();
-                this.render();
-                this.log('🎮 演示遊戲啟動成功！');
             }
-            
-            setupStarterDeck() {
-                const cards = [
-                    { name: '攻擊', cost: 1, type: 'attack', rarity: 'common', 
-                      effects: '造成 6 點傷害' },
-                    { name: '防禦', cost: 1, type: 'skill', rarity: 'common', 
-                      effects: '獲得 5 點格擋' },
-                    { name: '治療藥水', cost: 2, type: 'skill', rarity: 'rare', 
-                      effects: '恢復 10 點生命' },
-                    { name: '火球術', cost: 3, type: 'attack', rarity: 'legendary', 
-                      effects: '造成 15 點傷害' },
-                    { name: '抽牌', cost: 1, type: 'skill', rarity: 'common', 
-                      effects: '抽 2 張牌' }
+
+            applyEffectsAndBuffs(gameState, baseAttack, baseCrit, strikeCard, supportCard) {
+                let totalAttack = baseAttack;
+                let totalCrit = baseCrit;
+
+                // 應用卡牌的臨時加成
+                if (strikeCard?.tempBonus) {
+                    totalAttack += strikeCard.tempBonus.attack || 0;
+                    totalCrit += strikeCard.tempBonus.crit || 0;
+                }
+
+                if (supportCard?.tempBonus) {
+                    totalAttack += supportCard.tempBonus.attack || 0;
+                    totalCrit += supportCard.tempBonus.crit || 0;
+                }
+
+                // 應用回合Buff
+                gameState.turnBuffs?.forEach(buff => {
+                    if (buff.type === 'human_batter_attack_boost' && strikeCard?.attribute === 'human') {
+                        totalAttack += buff.value;
+                        console.log(`💝 ${buff.source}: 人屬打者攻擊力 +${buff.value}`);
+                    }
+                });
+
+                return { attack: totalAttack, crit: totalCrit };
+            }
+
+            isStrongAgainst(playerAttr, enemyAttr) {
+                const advantages = {
+                    'human': ['yin'],
+                    'yin': ['yang'], 
+                    'yang': ['heaven'],
+                    'heaven': ['earth'],
+                    'earth': ['human']
+                };
+                return advantages[playerAttr]?.includes(enemyAttr) || false;
+            }
+
+            getPlayerMainAttribute(gameState) {
+                if (gameState.player.strike_zone[0]) {
+                    return gameState.player.strike_zone[0].attribute;
+                }
+                if (gameState.player.support_zone[0]) {
+                    return gameState.player.support_zone[0].attribute;
+                }
+                return 'human';
+            }
+
+            async executeCombat(gameState) {
+                console.log('🎮 開始戰鬥階段...');
+                
+                if (!gameState.player.strike_zone[0]) {
+                    return { success: false, reason: '打擊區沒有卡牌' };
+                }
+
+                // 觸發卡牌效果
+                const strikeCard = gameState.player.strike_zone[0];
+                if (strikeCard.effects?.on_strike) {
+                    await strikeCard.effects.on_strike.call(strikeCard, gameState);
+                }
+
+                const supportCard = gameState.player.support_zone[0];
+                if (supportCard?.effects?.on_support) {
+                    await supportCard.effects.on_support.call(supportCard, gameState);
+                }
+
+                // 計算傷害
+                const damageResult = this.calculateDamage(gameState);
+                
+                // 對投手造成傷害
+                gameState.pitcher.current_hp -= damageResult.finalDamage;
+                gameState.pitcher.current_hp = Math.max(0, gameState.pitcher.current_hp);
+                
+                this.eventBus.emit('damage_dealt', {
+                    damage: damageResult.finalDamage,
+                    breakdown: damageResult.breakdown,
+                    pitcherHP: gameState.pitcher.current_hp
+                });
+
+                // 投手反擊
+                const pitcherDamage = this.calculatePitcherDamage(gameState);
+                gameState.player.current_hp -= pitcherDamage;
+                gameState.player.current_hp = Math.max(0, gameState.player.current_hp);
+
+                this.eventBus.emit('pitcher_attack', {
+                    damage: pitcherDamage,
+                    playerHP: gameState.player.current_hp
+                });
+
+                return {
+                    success: true,
+                    playerDamageDealt: damageResult.finalDamage,
+                    playerDamageReceived: pitcherDamage
+                };
+            }
+
+            calculatePitcherDamage(gameState) {
+                let damage = gameState.pitcher.current_attack;
+                
+                if (gameState.pitcher.tempDebuff?.attack) {
+                    damage += gameState.pitcher.tempDebuff.attack;
+                }
+
+                return Math.max(0, Math.round(damage));
+            }
+
+            applyPitcherFatigue(gameState) {
+                gameState.pitcher.current_attack *= (1 - GAME_BALANCE.PITCHER_BASE_FATIGUE_RATE);
+                gameState.pitcher.current_attack = Math.round(gameState.pitcher.current_attack);
+                
+                this.eventBus.emit('pitcher_fatigue', {
+                    newAttack: gameState.pitcher.current_attack
+                });
+            }
+        }
+
+        // 遊戲控制器
+        class GameController {
+            constructor() {
+                this.eventBus = new EventBus();
+                this.combatSystem = new CombatSystem(this.eventBus);
+                this.gameState = this.createInitialGameState();
+                this.setupEventListeners();
+                
+                console.log('🎮 遊戲控制器初始化完成');
+            }
+
+            createInitialGameState() {
+                return {
+                    player: {
+                        current_hp: GAME_BALANCE.PLAYER_INITIAL_HP,
+                        max_hp: GAME_BALANCE.PLAYER_INITIAL_HP,
+                        hand: [],
+                        strike_zone: [],
+                        support_zone: [],
+                        spell_zone: [],
+                        active_buffs: []
+                    },
+                    pitcher: {
+                        current_hp: GAME_BALANCE.PITCHER_INITIAL_HP,
+                        max_hp: GAME_BALANCE.PITCHER_INITIAL_HP,
+                        base_attack: 30,
+                        current_attack: 30,
+                        attribute: "heaven",
+                        active_debuffs: []
+                    },
+                    turnBuffs: []
+                };
+            }
+
+            setupEventListeners() {
+                this.eventBus.on('damage_dealt', (data) => {
+                    this.showDamageNumber(data.damage, 'damage');
+                    this.addLogEntry(`💥 對投手造成 ${data.damage} 點傷害`, 'damage');
+                    this.updateUI();
+                });
+
+                this.eventBus.on('pitcher_attack', (data) => {
+                    this.showDamageNumber(data.damage, 'heal', true);
+                    this.addLogEntry(`⚔️ 投手反擊造成 ${data.damage} 點傷害`, 'damage');
+                    this.updateUI();
+                });
+
+                this.eventBus.on('pitcher_fatigue', (data) => {
+                    this.addLogEntry(`😴 投手疲勞，攻擊力降至 ${data.newAttack}`, 'system');
+                    this.updateUI();
+                });
+            }
+
+            async playCard(cardIndex, targetZone) {
+                const card = this.gameState.player.hand[cardIndex];
+                if (!card) return { success: false, reason: '無效的卡牌' };
+
+                if (this.gameState.player[targetZone].length > 0) {
+                    return { success: false, reason: '區域已滿' };
+                }
+
+                if (!this.isValidPlacement(card, targetZone)) {
+                    return { success: false, reason: '卡牌類型不匹配' };
+                }
+
+                // 移動卡牌
+                this.gameState.player.hand.splice(cardIndex, 1);
+                this.gameState.player[targetZone].push(card);
+
+                // 觸發打出效果
+                if (card.effects?.on_play) {
+                    const result = await card.effects.on_play.call(card, this.gameState);
+                    if (result.success) {
+                        this.addLogEntry(`✨ ${card.name}: ${result.description}`, 'effect');
+                    }
+                }
+
+                this.addLogEntry(`🎴 ${card.name} 放置到${targetZone === 'strike_zone' ? '打擊區' : targetZone === 'support_zone' ? '輔助區' : '法術區'}`, 'system');
+                this.updateUI();
+
+                return { success: true };
+            }
+
+            async executeAttack() {
+                const result = await this.combatSystem.executeCombat(this.gameState);
+                
+                if (result.success) {
+                    // 應用投手疲勞
+                    this.combatSystem.applyPitcherFatigue(this.gameState);
+                    
+                    // 檢查勝負
+                    if (this.gameState.player.current_hp <= 0) {
+                        this.showGameOver('投手獲勝！', '玩家血量歸零');
+                        return;
+                    }
+                    
+                    if (this.gameState.pitcher.current_hp <= 0) {
+                        this.showGameOver('玩家獲勝！', '投手血量歸零');
+                        return;
+                    }
+                    
+                    // 清理場上卡牌
+                    this.clearField();
+                }
+
+                return result;
+            }
+
+            clearField() {
+                const zones = ['strike_zone', 'support_zone', 'spell_zone'];
+                zones.forEach(zone => {
+                    this.gameState.player[zone] = [];
+                });
+                
+                // 清理臨時效果
+                this.gameState.turnBuffs = [];
+                
+                this.updateUI();
+            }
+
+            isValidPlacement(card, targetZone) {
+                const validPlacements = {
+                    'strike_zone': ['batter'],
+                    'support_zone': ['support', 'batter'],
+                    'spell_zone': ['spell']
+                };
+                return validPlacements[targetZone]?.includes(card.type) || false;
+            }
+
+            createTestDeck() {
+                return [
+                    {
+                        id: 'president',
+                        name: '總統',
+                        type: 'batter',
+                        attribute: 'human',
+                        rarity: 'common',
+                        stats: { attack: 15, crit: 35 },
+                        description: '打擊：牌組裡每有一張人屬性卡，攻擊力+1',
+                        effects: {
+                            on_strike: async function(gameState) {
+                                const humanCards = 5; // 模擬數量
+                                this.tempBonus = { attack: humanCards };
+                                return { success: true, description: `人屬性卡加成: 攻擊力+${humanCards}` };
+                            }
+                        }
+                    },
+                    {
+                        id: 'kindness',
+                        name: '慈愛',
+                        type: 'support',
+                        attribute: 'human',
+                        rarity: 'common',
+                        stats: { attack: 8, crit: 70 },
+                        description: '輔助：人屬性打者卡攻擊力+10',
+                        effects: {
+                            on_support: async function(gameState) {
+                                gameState.turnBuffs.push({
+                                    type: 'human_batter_attack_boost',
+                                    value: 10,
+                                    source: '慈愛'
+                                });
+                                return { success: true, description: '人屬打者本回合攻擊力+10' };
+                            }
+                        }
+                    },
+                    {
+                        id: 'hero',
+                        name: '英雄',
+                        type: 'batter',
+                        attribute: 'human',
+                        rarity: 'common',
+                        stats: { attack: 25, crit: 50 },
+                        description: '無效果'
+                    },
+                    {
+                        id: 'shadow_devour',
+                        name: '暗影吞噬',
+                        type: 'batter',
+                        attribute: 'yin',
+                        rarity: 'common',
+                        stats: { attack: 20, crit: 35 },
+                        description: '打擊：若本回合沒有其他陰屬卡，攻擊力+10。輔助：投手攻擊力-3',
+                        effects: {
+                            on_strike: async function(gameState) {
+                                this.tempBonus = { attack: 10 };
+                                return { success: true, description: '暗影加成: 攻擊力+10' };
+                            },
+                            on_support: async function(gameState) {
+                                gameState.pitcher.tempDebuff = { attack: -3 };
+                                return { success: true, description: '投手攻擊力-3' };
+                            }
+                        }
+                    },
+                    {
+                        id: 'yinyang_harmony',
+                        name: '陰陽調和',
+                        type: 'batter',
+                        attribute: 'yang',
+                        rarity: 'rare',
+                        stats: { attack: 20, crit: 25 },
+                        description: '打擊：若輔助格為陰屬性，攻擊力翻倍'
+                    }
                 ];
+            }
+
+            startGame() {
+                // 創建測試手牌
+                this.gameState.player.hand = this.createTestDeck();
+                this.updateUI();
                 
-                this.state.player.hand = cards;
+                this.addLogEntry('🚀 遊戲開始！拖拽卡牌到場上進行戰鬥', 'system');
             }
-            
-            render() {
-                this.renderPlayerStatus();
-                this.renderHand();
+
+            updateUI() {
+                this.updatePlayerInfo();
+                this.updatePitcherInfo();
+                this.updateHand();
+                this.updateBattleField();
+                this.updateAttackButton();
             }
-            
-            renderPlayerStatus() {
-                const player = this.state.player;
-                const statusEl = document.getElementById('player-status');
-                statusEl.innerHTML = `
-                    <div class="status-item health">
-                        <div class="status-label">生命值</div>
-                        <div class="status-value">${player.health}/${player.maxHealth}</div>
-                    </div>
-                    <div class="status-item energy">
-                        <div class="status-label">能量</div>
-                        <div class="status-value">${player.energy}/${player.maxEnergy}</div>
-                    </div>
-                    <div class="status-item gold">
-                        <div class="status-label">金幣</div>
-                        <div class="status-value">${player.gold}</div>
-                    </div>
-                `;
+
+            updatePlayerInfo() {
+                const player = this.gameState.player;
+                const hpPercent = (player.current_hp / player.max_hp) * 100;
+                
+                document.getElementById('player-hp-fill').style.width = `${hpPercent}%`;
+                document.getElementById('player-hp').textContent = `${player.current_hp} / ${player.max_hp}`;
             }
-            
-            renderHand() {
+
+            updatePitcherInfo() {
+                const pitcher = this.gameState.pitcher;
+                const hpPercent = (pitcher.current_hp / pitcher.max_hp) * 100;
+                
+                document.getElementById('pitcher-hp-fill').style.width = `${hpPercent}%`;
+                document.getElementById('pitcher-hp').textContent = `${pitcher.current_hp} / ${pitcher.max_hp}`;
+                document.getElementById('pitcher-attack').textContent = `攻擊力: ${pitcher.current_attack}`;
+            }
+
+            updateHand() {
                 const handEl = document.getElementById('hand');
                 handEl.innerHTML = '';
                 
-                this.state.player.hand.forEach((card, index) => {
-                    const cardEl = document.createElement('div');
-                    cardEl.className = `card ${card.rarity} ${card.type}`;
-                    cardEl.innerHTML = `
-                        <div class="card-cost">${card.cost}</div>
-                        <div class="card-name">${card.name}</div>
-                        <div class="card-description">${card.effects}</div>
-                    `;
-                    
-                    cardEl.addEventListener('click', () => this.playCard(index));
+                this.gameState.player.hand.forEach((card, index) => {
+                    const cardEl = this.createCardElement(card, index);
                     handEl.appendChild(cardEl);
                 });
             }
-            
-            playCard(index) {
-                const card = this.state.player.hand[index];
-                if (this.state.player.energy >= card.cost) {
-                    this.state.player.energy -= card.cost;
-                    
-                    // 簡單的卡牌效果演示
-                    this.handleCardEffect(card);
-                    
-                    // 移除卡牌
-                    this.state.player.hand.splice(index, 1);
-                    
-                    this.log(`🎴 使用了 ${card.name}`, 'effect');
-                    this.render();
-                } else {
-                    this.log(`❌ 能量不足，無法使用 ${card.name}`, 'combat');
-                }
-            }
-            
-            handleCardEffect(card) {
-                switch (card.name) {
-                    case '治療藥水':
-                        this.state.player.health = Math.min(
-                            this.state.player.maxHealth, 
-                            this.state.player.health + 10
-                        );
-                        this.showDamageNumber('+10', 'heal');
-                        break;
-                    case '攻擊':
-                    case '火球術':
-                        this.showDamageNumber('-' + (card.name === '火球術' ? '15' : '6'), 'damage');
-                        break;
-                }
-            }
-            
-            showDamageNumber(text, type) {
-                const number = document.createElement('div');
-                number.className = 'damage-number';
-                number.textContent = text;
-                number.style.color = type === 'heal' ? '#27ae60' : '#e74c3c';
-                number.style.left = Math.random() * 200 + 'px';
-                number.style.top = '50%';
+
+            updateBattleField() {
+                const zones = ['strike_zone', 'support_zone', 'spell_zone'];
                 
-                document.body.appendChild(number);
-                setTimeout(() => number.remove(), 1000);
+                zones.forEach(zone => {
+                    const zoneEl = document.getElementById(zone.replace('_', '-'));
+                    const existingCard = zoneEl.querySelector('.zone-card');
+                    if (existingCard) existingCard.remove();
+                    
+                    const card = this.gameState.player[zone][0];
+                    if (card) {
+                        const cardEl = document.createElement('div');
+                        cardEl.className = `zone-card ${card.type}`;
+                        cardEl.innerHTML = `
+                            <div style="font-weight: bold; margin-bottom: 5px;">${card.name}</div>
+                            <div class="card-stats">攻擊: ${card.stats.attack} | 暴擊: ${card.stats.crit}</div>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">${card.description}</div>
+                        `;
+                        zoneEl.appendChild(cardEl);
+                    }
+                });
             }
-            
-            log(message, type = '') {
-                const logEl = document.getElementById('game-log');
+
+            updateAttackButton() {
+                const attackBtn = document.getElementById('attack-btn');
+                const hasStrikeCard = this.gameState.player.strike_zone.length > 0;
+                
+                attackBtn.disabled = !hasStrikeCard;
+                attackBtn.textContent = hasStrikeCard ? '⚔️ 攻擊' : '⚔️ 攻擊 (需要打擊區卡牌)';
+            }
+
+            createCardElement(card, index) {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card ${card.type} ${card.rarity}`;
+                cardEl.draggable = true;
+                cardEl.dataset.index = index;
+                
+                cardEl.innerHTML = `
+                    <div class="card-type">${card.type}</div>
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-stats">
+                        攻擊: ${card.stats.attack}<br>
+                        暴擊: ${card.stats.crit}
+                    </div>
+                    <div class="card-description">${card.description}</div>
+                `;
+
+                // 拖拽事件
+                cardEl.addEventListener('dragstart', (e) => {
+                    cardEl.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', index);
+                });
+
+                cardEl.addEventListener('dragend', () => {
+                    cardEl.classList.remove('dragging');
+                });
+
+                return cardEl;
+            }
+
+            showDamageNumber(damage, type, isPlayerDamage = false) {
+                const damageEl = document.createElement('div');
+                damageEl.className = `damage-number ${type}`;
+                damageEl.textContent = type === 'damage' ? `-${damage}` : `+${damage}`;
+                
+                const rect = document.querySelector(isPlayerDamage ? '.player-info' : '.pitcher-info').getBoundingClientRect();
+                damageEl.style.left = `${rect.left + rect.width / 2}px`;
+                damageEl.style.top = `${rect.top}px`;
+                
+                document.body.appendChild(damageEl);
+                
+                setTimeout(() => damageEl.remove(), 2000);
+            }
+
+            addLogEntry(message, type = '') {
+                const logEl = document.getElementById('combat-log');
                 const entry = document.createElement('div');
                 entry.className = `log-entry ${type}`;
                 entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
@@ -477,71 +992,69 @@
                 logEl.appendChild(entry);
                 logEl.scrollTop = logEl.scrollHeight;
                 
-                // 限制日誌條目數量
                 if (logEl.children.length > 20) {
                     logEl.removeChild(logEl.firstChild);
                 }
             }
+
+            showGameOver(title, reason) {
+                const gameOverEl = document.createElement('div');
+                gameOverEl.className = 'game-over';
+                gameOverEl.innerHTML = `
+                    <div class="game-over-content">
+                        <h1 style="color: #f39c12; margin-bottom: 20px;">${title}</h1>
+                        <p style="font-size: 1.2rem; margin-bottom: 30px;">${reason}</p>
+                        <button class="btn" onclick="location.reload()">🆕 重新開始</button>
+                    </div>
+                `;
+                document.body.appendChild(gameOverEl);
+            }
         }
-        
-        // 全域函數
-        let game;
-        
-        window.startNewGame = function() {
-            game = new DemoGame();
-            game.log('🆕 開始新遊戲！', 'system');
-        };
-        
-        window.addRandomCard = function() {
-            const randomCards = [
-                { name: '閃電箭', cost: 2, type: 'attack', rarity: 'rare', effects: '造成 8 點傷害，抽 1 張牌' },
-                { name: '護盾術', cost: 1, type: 'skill', rarity: 'common', effects: '獲得 8 點格擋' },
-                { name: '怒火', cost: 0, type: 'power', rarity: 'legendary', effects: '本場戰鬥攻擊力 +3' }
-            ];
-            
-            const randomCard = randomCards[Math.floor(Math.random() * randomCards.length)];
-            game.state.player.hand.push(randomCard);
-            game.render();
-            game.log(`✨ 獲得了新卡牌：${randomCard.name}`, 'system');
-        };
-        
-        window.showArchitecture = function() {
-            const info = `
-🏗️ 第二代架構特點：
 
-📦 分層設計：
-• 數據層 - 純狀態管理
-• 系統層 - 獨立業務邏輯  
-• UI層 - 純展示組件
-• 控制層 - 協調調度
+        // ===== 🚀 遊戲啟動 =====
+        const game = new GameController();
 
-⚡ 輕量化：
-• 統一狀態管理
-• 插件化效果系統
-• 事件驅動架構
-• 移除重複代碼
+        // 設置拖拽區域
+        document.querySelectorAll('.zone').forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
 
-🔧 易擴展：
-• 新效果只需註冊
-• 模組化組件設計
-• 依賴注入模式
-• 完全解耦架構
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
 
-🎯 現代化：
-• ES6+ 語法
-• Promise/async
-• 事件總線模式
-• 可測試設計
-            `.trim();
-            
-            alert(info);
-            game.log('📋 已顯示架構說明', 'system');
-        };
-        
-        // 初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            game = new DemoGame();
+            zone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const cardIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetZone = zone.dataset.zone;
+                
+                const result = await game.playCard(cardIndex, targetZone);
+                if (!result.success) {
+                    game.addLogEntry(`❌ ${result.reason}`, 'system');
+                }
+            });
         });
+
+        // 按鈕事件
+        document.getElementById('attack-btn').addEventListener('click', async () => {
+            await game.executeAttack();
+        });
+
+        document.getElementById('new-turn-btn').addEventListener('click', () => {
+            game.clearField();
+            game.addLogEntry('🔄 新回合開始', 'system');
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        // 啟動遊戲
+        game.startGame();
     </script>
 </body>
 </html>
