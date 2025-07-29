@@ -3,169 +3,330 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roguelike TCG - 卡牌設計 v8.0 (禪意和色)</title>
-    <!-- 引入 Tailwind CSS -->
+    <title>卡牌美術設計系統 - 完整實作指南</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* 將字體應用到全局 */
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-        }
-        /* 自定義 Tailwind 配置，以使用我們的新顏色 */
+    <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'human-base': '#9F563A', // 柿渋色
-                        'human-dark': '#79432C',
+                        'human-base': '#9F563A',
+                        'human-dark': '#79432C', 
                         'human-text': '#F3EAD3',
-                        'yin-base': '#293047',   // 藍鉄色
+                        'yin-base': '#293047',
                         'yin-dark': '#1A2033',
                         'yin-text': '#D0D8E8',
-                        'yang-base': '#FCFAF2',   // 白練
+                        'yang-base': '#FCFAF2',
                         'yang-dark': '#E0D8C0',
                         'yang-text': '#5D4037',
-                        'legendary-ring': '#DAA520', // 金色光環
+                        'legendary-ring': '#DAA520'
+                    },
+                    animation: {
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'float': 'float 3s ease-in-out infinite'
                     }
                 }
             }
         }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(218, 165, 32, 0.3); }
+            to { box-shadow: 0 0 20px rgba(218, 165, 32, 0.7); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .card-base {
+            width: 220px;
+            height: 320px;
+        }
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-lift:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
     </style>
 </head>
-<body class="bg-[#1a1a2e] text-[#e0e0e0] p-8 flex flex-col items-center">
+<body class="bg-slate-900 text-white p-8">
 
-    <h1 class="text-3xl font-bold text-white border-b border-gray-600 pb-2 mb-6 w-full max-w-5xl">卡牌設計 v8.0 - 禪意和色</h1>
-
-    <!-- 人 (Human) - 柿渋色 -->
-    <h2 class="text-2xl font-bold text-white self-start w-full max-w-5xl mb-6">人 (Human) - 柿渋色</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl">
-        
-        <!-- 普通卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-human-base shadow-sm text-human-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">民風淳樸</h3>
-                <span class="bg-black/30 text-xs px-2 py-1 rounded-md">打者</span>
-            </div>
-            <div class="h-[150px] bg-black/20 rounded-lg flex items-center justify-center text-white/50 border border-dashed border-white/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+13</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">27</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">50</p></div>
-            </div>
-            <p class="text-sm bg-black/20 p-2 rounded-lg min-h-[60px]">無效果。</p>
-        </div>
-
-        <!-- 稀有卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-gradient-to-br from-human-base to-human-dark shadow-md text-human-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">仁道傳承</h3>
-                <span class="bg-black/30 text-xs px-2 py-1 rounded-md">打者</span>
-            </div>
-            <div class="h-[150px] bg-black/20 rounded-lg flex items-center justify-center text-white/50 border border-dashed border-white/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+10</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">35</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">35</p></div>
-            </div>
-            <p class="text-sm bg-black/20 p-2 rounded-lg min-h-[60px]">打擊：若場上有陰或陽屬性卡，攻擊力+20。輔助：抽1張人屬性卡。</p>
-        </div>
-
-        <!-- 傳說卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">集大成者</h3>
-                <span class="bg-black/30 text-xs px-2 py-1 rounded-md">打者</span>
-            </div>
-            <div class="h-[150px] bg-black/20 rounded-lg flex items-center justify-center text-white/50 border border-dashed border-white/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+10</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">10</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">25</p></div>
-            </div>
-            <p class="text-sm bg-black/20 p-2 rounded-lg min-h-[60px]">被動：此卡在你手中時，你每打出一張人屬性卡，其攻擊力+2。</p>
-        </div>
+    <!-- 標題區域 -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            🎨 卡牌美術設計系統
+        </h1>
+        <p class="text-xl text-gray-300">基於和色的內斂質感設計</p>
     </div>
 
-    <!-- 陰 (Yin) - 藍鉄色 -->
-    <h2 class="text-2xl font-bold text-white self-start w-full max-w-5xl mt-12 mb-6">陰 (Yin) - 藍鉄色</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl">
-        <!-- 普通卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-yin-base shadow-sm text-yin-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">暗影吞噬</h3>
-                <span class="bg-white/10 text-xs px-2 py-1 rounded-md">打者</span>
+    <!-- 設計哲學 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">🎭 設計哲學</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-slate-800 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400">內斂質感</h3>
+                <p class="text-gray-300">避免高飽和度色彩，追求東方美學的沉穩與深度</p>
             </div>
-            <div class="h-[150px] bg-black/20 rounded-lg flex items-center justify-center text-white/50 border border-dashed border-white/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+10</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">20</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">35</p></div>
+            <div class="bg-slate-800 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4 text-blue-400">和色基礎</h3>
+                <p class="text-gray-300">使用日本傳統色彩，賦予卡牌文化內涵</p>
             </div>
-            <p class="text-sm bg-black/20 p-2 rounded-lg min-h-[60px]">打擊：若本回合沒有打出其他陰屬卡，此卡獲得 +10 攻擊力。</p>
+            <div class="bg-slate-800 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4 text-green-400">質感分層</h3>
+                <p class="text-gray-300">通過工藝質感而非顏色變化區分稀有度</p>
+            </div>
         </div>
-        
-        <!-- 傳說卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-gradient-to-br from-yin-base to-yin-dark shadow-lg ring-2 ring-legendary-ring text-yin-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">混沌之源</h3>
-                <span class="bg-white/10 text-xs px-2 py-1 rounded-md">法術</span>
-            </div>
-            <div class="h-[150px] bg-black/20 rounded-lg flex items-center justify-center text-white/50 border border-dashed border-white/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+15</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">-</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">-</p></div>
-            </div>
-            <p class="text-sm bg-black/20 p-2 rounded-lg min-h-[60px]">減所有敵攻20，自陰打者+30攻。</p>
-        </div>
-    </div>
+    </section>
 
-    <!-- 陽 (Yang) - 白練 -->
-    <h2 class="text-2xl font-bold text-white self-start w-full max-w-5xl mt-12 mb-6">陽 (Yang) - 白練</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl">
-        <!-- 普通卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-yang-base shadow-sm text-yang-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">武器大師</h3>
-                <span class="bg-black/10 text-xs px-2 py-1 rounded-md">輔助</span>
+    <!-- 色彩系統展示 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">🎨 屬性色彩系統</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            
+            <!-- 人屬性 -->
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">人 (Human)</h3>
+                <div class="bg-human-base p-8 rounded-xl mb-4">
+                    <div class="text-human-text font-bold text-lg">柿渋色</div>
+                    <div class="text-human-text opacity-80">#9F563A</div>
+                </div>
+                <p class="text-gray-400">溫暖沉穩，如歲月沈澱的器物</p>
             </div>
-            <div class="h-[150px] bg-black/10 rounded-lg flex items-center justify-center text-black/50 border border-dashed border-black/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+8</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">8</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">70</p></div>
-            </div>
-            <p class="text-sm bg-black/10 p-2 rounded-lg min-h-[60px]">輔助：手牌中每有一種不同屬性的卡，你的任意打者攻擊力+5（本回合）。</p>
-        </div>
-        
-        <!-- 稀有卡 -->
-        <div class="w-[280px] h-[400px] rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl
-                    bg-gradient-to-br from-yang-base to-yang-dark shadow-md text-yang-text">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">陰陽調和</h3>
-                <span class="bg-black/10 text-xs px-2 py-1 rounded-md">打者</span>
-            </div>
-            <div class="h-[150px] bg-black/10 rounded-lg flex items-center justify-center text-black/50 border border-dashed border-black/20 my-2">插畫區域</div>
-            <div class="flex justify-around text-center">
-                <div><span class="text-xs opacity-80">血量</span><p class="text-3xl font-bold">+0</p></div>
-                <div><span class="text-xs opacity-80">攻擊</span><p class="text-3xl font-bold">20</p></div>
-                <div><span class="text-xs opacity-80">暴擊</span><p class="text-3xl font-bold">25</p></div>
-            </div>
-            <p class="text-sm bg-black/10 p-2 rounded-lg min-h-[60px]">打擊：若你的輔助格為陰屬性，此卡攻擊力變為兩倍。</p>
-        </div>
-    </div>
 
-    <!-- 原始的遊戲腳本依然加載，確保邏輯部分不受影響 -->
-    <script type="module" src="src/main.js"></script>
+            <!-- 陰屬性 -->
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">陰 (Yin)</h3>
+                <div class="bg-yin-base p-8 rounded-xl mb-4">
+                    <div class="text-yin-text font-bold text-lg">藍鉄色</div>
+                    <div class="text-yin-text opacity-80">#293047</div>
+                </div>
+                <p class="text-gray-400">深邃神秘，如黎明前的夜空</p>
+            </div>
+
+            <!-- 陽屬性 -->
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-4">陽 (Yang)</h3>
+                <div class="bg-yang-base border-2 border-gray-300 p-8 rounded-xl mb-4">
+                    <div class="text-yang-text font-bold text-lg">白練</div>
+                    <div class="text-yang-text opacity-80">#FCFAF2</div>
+                </div>
+                <p class="text-gray-400">純淨溫潤，如未漂白的絲綢</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 稀有度展示 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">💎 稀有度質感系統</h2>
+        
+        <!-- 人屬性卡牌展示 -->
+        <h3 class="text-2xl font-bold mb-6 text-center">人屬性卡牌示例</h3>
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+            
+            <!-- 普通卡 -->
+            <div class="card-base bg-human-base text-human-text rounded-2xl p-4 mx-auto hover-lift">
+                <div class="text-center mb-4">
+                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">普通</div>
+                    <h4 class="text-lg font-bold">民風淳樸</h4>
+                </div>
+                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
+                    插畫區域
+                </div>
+                <div class="text-center space-y-2">
+                    <div class="text-sm">平滑質樸的基礎質感</div>
+                    <div class="text-xs bg-black/20 p-2 rounded">Class: bg-human-base</div>
+                </div>
+            </div>
+
+            <!-- 稀有卡 -->
+            <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-md text-human-text rounded-2xl p-4 mx-auto hover-lift">
+                <div class="text-center mb-4">
+                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">稀有</div>
+                    <h4 class="text-lg font-bold">仁道傳承</h4>
+                </div>
+                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
+                    插畫區域
+                </div>
+                <div class="text-center space-y-2">
+                    <div class="text-sm">墨跡層次的漸層質感</div>
+                    <div class="text-xs bg-black/20 p-2 rounded">Class: bg-gradient-to-br from-human-base to-human-dark shadow-md</div>
+                </div>
+            </div>
+
+            <!-- 傳說卡 -->
+            <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text rounded-2xl p-4 mx-auto hover-lift animate-glow">
+                <div class="text-center mb-4">
+                    <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">傳說</div>
+                    <h4 class="text-lg font-bold">集大成者</h4>
+                </div>
+                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
+                    插畫區域
+                </div>
+                <div class="text-center space-y-2">
+                    <div class="text-sm">古卷金邊的頂級質感</div>
+                    <div class="text-xs bg-black/20 p-2 rounded">Class: + shadow-lg ring-2 ring-legendary-ring</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 其他屬性卡牌 -->
+        <h3 class="text-2xl font-bold mb-6 text-center">其他屬性對比</h3>
+        <div class="grid md:grid-cols-2 gap-8">
+            
+            <!-- 陰屬性傳說卡 -->
+            <div class="card-base bg-gradient-to-br from-yin-base to-yin-dark shadow-lg ring-2 ring-legendary-ring text-yin-text rounded-2xl p-4 mx-auto hover-lift">
+                <div class="text-center mb-4">
+                    <div class="bg-white/10 text-xs px-2 py-1 rounded inline-block mb-2">陰 · 傳說</div>
+                    <h4 class="text-lg font-bold">混沌之源</h4>
+                </div>
+                <div class="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center text-white/50">
+                    插畫區域
+                </div>
+                <div class="text-center">
+                    <div class="text-sm">深邃神秘的陰屬傳說</div>
+                </div>
+            </div>
+
+            <!-- 陽屬性稀有卡 -->
+            <div class="card-base bg-gradient-to-br from-yang-base to-yang-dark shadow-md text-yang-text rounded-2xl p-4 mx-auto hover-lift">
+                <div class="text-center mb-4">
+                    <div class="bg-black/10 text-xs px-2 py-1 rounded inline-block mb-2">陽 · 稀有</div>
+                    <h4 class="text-lg font-bold">陰陽調和</h4>
+                </div>
+                <div class="bg-black/10 h-32 rounded-lg mb-4 flex items-center justify-center text-black/50">
+                    插畫區域
+                </div>
+                <div class="text-center">
+                    <div class="text-sm">純淨溫潤的陽屬稀有</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 工程實作指南 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">⚙️ 工程實作指南</h2>
+        
+        <div class="bg-slate-800 p-6 rounded-xl mb-8">
+            <h3 class="text-xl font-bold mb-4 text-green-400">動態樣式生成函數</h3>
+            <pre class="bg-slate-900 p-4 rounded-lg text-sm overflow-x-auto"><code class="text-green-300">
+// 根據卡牌屬性和稀有度動態生成 Tailwind Classes
+function generateCardClasses(attribute, rarity) {
+  const baseClasses = 'card-base rounded-2xl p-4 transition-all duration-300 hover:-translate-y-2';
+  
+  // 屬性色彩映射
+  const attributeColors = {
+    human: { base: 'human-base', dark: 'human-dark', text: 'human-text' },
+    yin: { base: 'yin-base', dark: 'yin-dark', text: 'yin-text' },
+    yang: { base: 'yang-base', dark: 'yang-dark', text: 'yang-text' }
+  };
+  
+  // 稀有度質感映射
+  const rarityStyles = {
+    common: (colors) => `bg-${colors.base}`,
+    rare: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-md`,
+    legendary: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-lg ring-2 ring-legendary-ring`
+  };
+  
+  const colors = attributeColors[attribute];
+  const backgroundStyle = rarityStyles[rarity](colors);
+  
+  return `${baseClasses} ${backgroundStyle} text-${colors.text}`;
+}
+
+// 使用示例
+const cardClass = generateCardClasses('human', 'legendary');
+// 結果: "card-base rounded-2xl p-4 ... bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text"
+</code></pre>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-xl mb-8">
+            <h3 class="text-xl font-bold mb-4 text-blue-400">React 組件範例</h3>
+            <pre class="bg-slate-900 p-4 rounded-lg text-sm overflow-x-auto"><code class="text-blue-300">
+function Card({ card }) {
+  const cardClasses = generateCardClasses(card.attribute, card.rarity);
+  
+  return (
+    &lt;div className={cardClasses}&gt;
+      &lt;div className="text-center mb-4"&gt;
+        &lt;div className="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2"&gt;
+          {card.rarity}
+        &lt;/div&gt;
+        &lt;h4 className="text-lg font-bold"&gt;{card.name}&lt;/h4&gt;
+      &lt;/div&gt;
+      
+      &lt;div className="bg-black/20 h-32 rounded-lg mb-4 flex items-center justify-center"&gt;
+        &lt;img src={card.artwork} alt={card.name} className="max-w-full max-h-full object-cover rounded" /&gt;
+      &lt;/div&gt;
+      
+      &lt;div className="text-center space-y-2"&gt;
+        &lt;div className="text-sm"&gt;{card.description}&lt;/div&gt;
+        &lt;div className="flex justify-around"&gt;
+          &lt;span&gt;⚔️ {card.attack}&lt;/span&gt;
+          &lt;span&gt;💎 {card.crit}&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+        </div>
+    </section>
+
+    <!-- 設計規範總結 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">📋 設計規範總結</h2>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-slate-800 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4 text-purple-400">✅ 設計優勢</h3>
+                <ul class="space-y-2 text-gray-300">
+                    <li>• <strong>文化內涵深度</strong>：和色系統賦予卡牌東方美學</li>
+                    <li>• <strong>視覺統一性</strong>：所有卡牌保持和諧的色彩基調</li>
+                    <li>• <strong>工程友好性</strong>：Tailwind CSS 原子類易於實現</li>
+                    <li>• <strong>可擴展性</strong>：新屬性只需添加對應色彩配置</li>
+                    <li>• <strong>性能優化</strong>：純 CSS 實現，無需額外資源</li>
+                </ul>
+            </div>
+            
+            <div class="bg-slate-800 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4 text-orange-400">🚀 改進建議</h3>
+                <ul class="space-y-2 text-gray-300">
+                    <li>• <strong>動效增強</strong>：添加更豐富的 hover 和點擊動效</li>
+                    <li>• <strong>無障礙支持</strong>：考慮色盲用戶的區分度</li>
+                    <li>• <strong>響應式適配</strong>：不同螢幕尺寸的卡牌大小調整</li>
+                    <li>• <strong>主題切換</strong>：支持深色/淺色模式切換</li>
+                    <li>• <strong>個性化</strong>：允許玩家自定義卡背或邊框</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- 互動示例 -->
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-8 text-center">🎮 互動效果示例</h2>
+        <div class="text-center">
+            <p class="text-gray-400 mb-6">將滑鼠懸停在下方卡牌上體驗互動效果</p>
+            <div class="flex justify-center space-x-8">
+                <div class="card-base bg-gradient-to-br from-human-base to-human-dark shadow-lg ring-2 ring-legendary-ring text-human-text rounded-2xl p-4 hover-lift cursor-pointer animate-float">
+                    <div class="text-center">
+                        <div class="bg-black/20 text-xs px-2 py-1 rounded inline-block mb-2">互動示例</div>
+                        <h4 class="text-lg font-bold">懸停效果</h4>
+                        <div class="bg-black/20 h-24 rounded-lg mt-4 flex items-center justify-center text-white/50">
+                            ✨ 卡牌特效
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-gray-500 pt-8 border-t border-gray-700">
+        <p>🎨 基於東方美學的卡牌設計系統 | 使用 Tailwind CSS 實現</p>
+    </footer>
 
 </body>
 </html>
