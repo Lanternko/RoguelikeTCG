@@ -7,8 +7,8 @@ export class KindnessCard {
     
     return {
       id: 'kindness',
-      name: '慈愛',
-      type: 'support',
+      name: '慈愛afasdfasdfasfdasdf',
+      type: 'batter',
       attribute: 'human',
       rarity: 'common',
       stats: {

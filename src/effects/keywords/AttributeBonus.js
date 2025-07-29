@@ -1,5 +1,5 @@
 // effects/keywords/AttributeBonus.js
-import { GAME_BALANCE } from '../../data/balance/gameBalance.js';
+import { GAME_BALANCE } from '../../data/balance/GameBalance.js';
 
 export class AttributeBonusKeyword {
   // 總統效果：每有一張人屬性卡，攻擊力+1

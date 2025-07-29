@@ -1,5 +1,4 @@
 // cards/collections/human/rare/BenevolentLegacy.js
-import { AttributeBonusKeyword } from '../../../../effects/keywords/AttributeBonus.js';
 import { DrawKeyword } from '../../../../effects/keywords/DrawKeyword.js';
 import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
 
