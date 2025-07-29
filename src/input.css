@@ -1,0 +1,5 @@
+/* src/input.css */
+/* Ensure this file is processed by Tailwind CSS via PostCSS or a compatible build tool */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
