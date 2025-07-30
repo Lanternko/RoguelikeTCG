@@ -394,26 +394,48 @@
                 console.log(`✅ 成功註冊 ${this.cards.size} 張卡牌`);
             }
             
+            // 修改：补充完整的卡牌注册
             static registerAllCards() {
-                // 人屬 - 普通
+                // 人屬 - 普通 (13张)
                 this.register('president', this.createPresidentCard);
                 this.register('kindness', this.createKindnessCard);
                 this.register('hero', this.createHeroCard);
                 this.register('lottery', this.createLotteryCard);
                 this.register('strongman', this.createStrongmanCard);
                 this.register('democracy', this.createDemocracyCard);
+                this.register('culture', this.createCultureCard);
+                this.register('patience', this.createPatienceCard);
+                this.register('unity', this.createUnityCard);
+                this.register('legacy', this.createLegacyCard);
+                this.register('simple_folk', this.createSimpleFolkCard);
+                this.register('flesh', this.createFleshCard);
+                this.register('inheritance', this.createInheritanceCard);
                 
-                // 陰屬
+                // 人屬 - 稀有 (5张)
+                this.register('help_stream', this.createHelpStreamCard);
+                this.register('benevolent_legacy', this.createBenevolentLegacyCard);
+                this.register('communism', this.createCommunismCard);
+                this.register('multiculture', this.createMulticultureCard);
+                this.register('prosperity', this.createProsperityCard);
+                
+                // 人屬 - 傳說 (2张)
+                this.register('master', this.createMasterCard);
+                this.register('head_pat', this.createHeadPatCard);
+                
+                // 陰屬 (5张)
                 this.register('shadow_devour', this.createShadowDevourCard);
                 this.register('lone_shadow', this.createLoneShadowCard);
                 this.register('evil_genius', this.createEvilGeniusCard);
+                this.register('ambush', this.createAmbushCard);
+                this.register('time_stop', this.createTimeStopCard);
                 
-                // 陽屬
+                // 陽屬 (5张)
                 this.register('weapon_master', this.createWeaponMasterCard);
                 this.register('yinyang_harmony', this.createYinYangHarmonyCard);
                 this.register('holy_light', this.createHolyLightCard);
+                this.register('late_game', this.createLateGameCard);
+                this.register('resurrection', this.createResurrectionCard);
             }
-            
             static register(id, cardFactory) {
                 this.cards.set(id, cardFactory);
             }
@@ -681,6 +703,513 @@
                 };
             }
             
+            // 新增：补充缺失的卡牌工厂方法
+
+            // 人屬 - 普通卡牌
+            static createCultureCard() {
+                const balance = CARD_BALANCE.CULTURE;
+                return {
+                    id: 'culture',
+                    name: '文化脈絡',
+                    type: 'spell',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp },
+                    description: '抽1張任意卡牌',
+                    effects: {
+                        on_play: async function(gameState) {
+                            if (gameState.player.deck.length > 0) {
+                                const drawnCard = gameState.player.deck.pop();
+                                gameState.player.hand.push(drawnCard);
+                                return { success: true, description: `抽到了 ${drawnCard.name}` };
+                            }
+                            return { success: false, reason: '牌庫為空' };
+                        }
+                    }
+                };
+            }
+
+            static createPatienceCard() {
+                const balance = CARD_BALANCE.PATIENCE;
+                return {
+                    id: 'patience',
+                    name: '忍耐',
+                    type: 'spell',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp },
+                    description: '本回合減少10點所受傷害',
+                    effects: {
+                        on_play: async function(gameState) {
+                            gameState.turnBuffs = gameState.turnBuffs || [];
+                            gameState.turnBuffs.push({
+                                type: 'damage_reduction',
+                                value: 10,
+                                source: this.name
+                            });
+                            return { success: true, description: '本回合減少10點所受傷害' };
+                        }
+                    }
+                };
+            }
+
+            static createUnityCard() {
+                const balance = CARD_BALANCE.UNITY;
+                return {
+                    id: 'unity',
+                    name: '團結',
+                    type: 'spell',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp },
+                    description: '此回合中，你所有的人屬性打者卡攻擊力+8',
+                    effects: {
+                        on_play: async function(gameState) {
+                            gameState.turnBuffs = gameState.turnBuffs || [];
+                            gameState.turnBuffs.push({
+                                type: 'human_batter_attack_boost',
+                                value: 8,
+                                source: this.name
+                            });
+                            return { success: true, description: '人屬性打者卡攻擊力+8' };
+                        }
+                    }
+                };
+            }
+
+            static createLegacyCard() {
+                const balance = CARD_BALANCE.LEGACY;
+                return {
+                    id: 'legacy',
+                    name: '遺產',
+                    type: 'deathrattle',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '死聲：抽1張卡牌',
+                    effects: {
+                        on_deathrattle: async function(gameState) {
+                            if (gameState.player.deck.length > 0) {
+                                const drawnCard = gameState.player.deck.pop();
+                                gameState.player.hand.push(drawnCard);
+                                return { success: true, description: `抽到了 ${drawnCard.name}` };
+                            }
+                            return { success: false, reason: '牌庫為空' };
+                        }
+                    }
+                };
+            }
+
+            static createSimpleFolkCard() {
+                const balance = CARD_BALANCE.SIMPLE_FOLK;
+                return {
+                    id: 'simple_folk',
+                    name: '民風淳樸',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '高攻擊力的基礎打者',
+                    effects: {}
+                };
+            }
+
+            static createFleshCard() {
+                const balance = CARD_BALANCE.FLESH;
+                return {
+                    id: 'flesh',
+                    name: '肉塊',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '高血量的肉盾打者',
+                    effects: {}
+                };
+            }
+
+            static createInheritanceCard() {
+                const balance = CARD_BALANCE.INHERITANCE;
+                return {
+                    id: 'inheritance',
+                    name: '傳承',
+                    type: 'deathrattle',
+                    attribute: 'human',
+                    rarity: 'common',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '死聲：抽1張人屬性卡牌。下一回合，你打出的人屬性打者卡攻擊力+10',
+                    effects: {
+                        on_deathrattle: async function(gameState) {
+                            // 抽1張人屬性卡
+                            const humanCards = gameState.player.deck.filter(card => card.attribute === 'human');
+                            if (humanCards.length > 0) {
+                                const randomCard = humanCards[Math.floor(Math.random() * humanCards.length)];
+                                gameState.player.deck = gameState.player.deck.filter(c => c !== randomCard);
+                                gameState.player.hand.push(randomCard);
+                                
+                                // 下回合buff
+                                gameState.player.active_buffs.push({
+                                    type: 'human_batter_attack_boost_next_turn',
+                                    value: 10,
+                                    duration: 1
+                                });
+                                
+                                return { success: true, description: `抽到了 ${randomCard.name}，下回合人屬打者+10攻擊` };
+                            }
+                            return { success: false, reason: '牌庫中沒有人屬性卡' };
+                        }
+                    }
+                };
+            }
+
+            // 人屬 - 稀有卡牌
+            static createHelpStreamCard() {
+                const balance = CARD_BALANCE.HELP_STREAM;
+                return {
+                    id: 'help_stream',
+                    name: '幫我開直播',
+                    type: 'deathrattle',
+                    attribute: 'human',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '死聲：你的人屬性打者卡+5攻擊力',
+                    effects: {
+                        on_deathrattle: async function(gameState) {
+                            let boostedCount = 0;
+                            [...gameState.player.hand, ...gameState.player.deck, ...gameState.player.discard_pile].forEach(card => {
+                                if (card.attribute === 'human' && card.type === 'batter') {
+                                    card.permanentBonus = card.permanentBonus || {};
+                                    card.permanentBonus.attack = (card.permanentBonus.attack || 0) + 5;
+                                    boostedCount++;
+                                }
+                            });
+                            return { success: true, description: `${boostedCount}張人屬打者卡永久+5攻擊力` };
+                        }
+                    }
+                };
+            }
+
+            static createBenevolentLegacyCard() {
+                const balance = CARD_BALANCE.BENEVOLENT_LEGACY;
+                return {
+                    id: 'benevolent_legacy',
+                    name: '仁道傳承',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '打擊：若場上有陰或陽屬性卡，攻擊力+20；若場上有天或地屬性卡，棄1張牌抽2張。輔助：抽1張人屬性卡',
+                    effects: {
+                        on_strike: async function(gameState) {
+                            const fieldCards = [gameState.player.strike_zone, gameState.player.support_zone, gameState.player.spell_zone].filter(Boolean);
+                            const hasYinYang = fieldCards.some(card => card && (card.attribute === 'yin' || card.attribute === 'yang'));
+                            
+                            if (hasYinYang) {
+                                this.tempBonus = this.tempBonus || {};
+                                this.tempBonus.attack = (this.tempBonus.attack || 0) + 20;
+                                return { success: true, description: '場上有陰/陽屬性，攻擊力+20' };
+                            }
+                            return { success: false, reason: '場上沒有陰/陽屬性卡' };
+                        },
+                        on_support: async function(gameState) {
+                            const humanCards = gameState.player.deck.filter(card => card.attribute === 'human');
+                            if (humanCards.length > 0) {
+                                const randomCard = humanCards[Math.floor(Math.random() * humanCards.length)];
+                                gameState.player.deck = gameState.player.deck.filter(c => c !== randomCard);
+                                gameState.player.hand.push(randomCard);
+                                return { success: true, description: `抽到了 ${randomCard.name}` };
+                            }
+                            return { success: false, reason: '牌庫中沒有人屬性卡' };
+                        }
+                    }
+                };
+            }
+
+            static createCommunismCard() {
+                const balance = CARD_BALANCE.COMMUNISM;
+                return {
+                    id: 'communism',
+                    name: '共產主義',
+                    type: 'spell',
+                    attribute: 'human',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp },
+                    description: '若我方血量低於敵方，則回復血量至與敵方相同',
+                    effects: {
+                        on_play: async function(gameState) {
+                            const playerHP = gameState.player.current_hp;
+                            const enemyHP = gameState.pitcher.current_hp;
+                            
+                            if (playerHP < enemyHP) {
+                                const healAmount = Math.min(enemyHP - playerHP, gameState.player.max_hp - playerHP);
+                                gameState.player.current_hp += healAmount;
+                                return { success: true, description: `回復${healAmount}點血量，追平敵方` };
+                            }
+                            return { success: false, reason: '血量不低於敵方' };
+                        }
+                    }
+                };
+            }
+
+            static createMulticultureCard() {
+                const balance = CARD_BALANCE.MULTICULTURE;
+                return {
+                    id: 'multiculture',
+                    name: '多元文化',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '輔助：若場上存在≥3種屬性，你手牌中所有的人屬性打者卡攻擊力+10',
+                    effects: {
+                        on_support: async function(gameState) {
+                            const attributes = new Set();
+                            const fieldCards = [gameState.player.strike_zone, gameState.player.support_zone, gameState.player.spell_zone];
+                            fieldCards.forEach(card => {
+                                if (card) attributes.add(card.attribute);
+                            });
+                            
+                            if (attributes.size >= 3) {
+                                let boostedCount = 0;
+                                gameState.player.hand.forEach(card => {
+                                    if (card.attribute === 'human' && card.type === 'batter') {
+                                        card.tempBonus = card.tempBonus || {};
+                                        card.tempBonus.attack = (card.tempBonus.attack || 0) + 10;
+                                        boostedCount++;
+                                    }
+                                });
+                                return { success: true, description: `場上${attributes.size}種屬性，${boostedCount}張人屬打者+10攻擊` };
+                            }
+                            return { success: false, reason: `場上屬性種類不足(${attributes.size}/3)` };
+                        }
+                    }
+                };
+            }
+
+            static createProsperityCard() {
+                const balance = CARD_BALANCE.PROSPERITY;
+                return {
+                    id: 'prosperity',
+                    name: '共榮',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '輔助：若場上存在≥3種屬性，你的人屬性打者卡+15攻擊力',
+                    effects: {
+                        on_support: async function(gameState) {
+                            const attributes = new Set();
+                            const fieldCards = [gameState.player.strike_zone, gameState.player.support_zone, gameState.player.spell_zone];
+                            fieldCards.forEach(card => {
+                                if (card) attributes.add(card.attribute);
+                            });
+                            
+                            if (attributes.size >= 3) {
+                                gameState.turnBuffs = gameState.turnBuffs || [];
+                                gameState.turnBuffs.push({
+                                    type: 'human_batter_attack_boost',
+                                    value: 15,
+                                    source: this.name
+                                });
+                                return { success: true, description: `場上${attributes.size}種屬性，人屬打者+15攻擊力` };
+                            }
+                            return { success: false, reason: `場上屬性種類不足(${attributes.size}/3)` };
+                        }
+                    }
+                };
+            }
+
+            // 人屬 - 傳說卡牌
+            static createMasterCard() {
+                const balance = CARD_BALANCE.MASTER;
+                return {
+                    id: 'master',
+                    name: '集大成者',
+                    type: 'batter',
+                    attribute: 'human',
+                    rarity: 'legendary',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '被動：此卡在你手中時，你每打出一張人屬性卡，其攻擊力+2。打擊：牌組中每有一張人屬性卡，攻擊力+1',
+                    effects: {
+                        passive_in_hand: async function(gameState, playedCard) {
+                            if (playedCard.attribute === 'human') {
+                                this.tempBonus = this.tempBonus || {};
+                                this.tempBonus.attack = (this.tempBonus.attack || 0) + 2;
+                                return { success: true, description: '集大成者攻擊力+2' };
+                            }
+                            return { success: false };
+                        },
+                        on_strike: async function(gameState) {
+                            let humanCards = 0;
+                            gameState.player.hand.forEach(card => {
+                                if (card.attribute === 'human') humanCards++;
+                            });
+                            gameState.player.discard_pile.forEach(card => {
+                                if (card.attribute === 'human') humanCards++;
+                            });
+                            
+                            this.tempBonus = this.tempBonus || {};
+                            this.tempBonus.attack = (this.tempBonus.attack || 0) + humanCards;
+                            
+                            return { success: true, description: `人屬性卡數量: ${humanCards}，攻擊力+${humanCards}` };
+                        }
+                    }
+                };
+            }
+
+            static createHeadPatCard() {
+                const balance = CARD_BALANCE.HEAD_PAT;
+                return {
+                    id: 'head_pat',
+                    name: '摸頭',
+                    type: 'spell',
+                    attribute: 'human',
+                    rarity: 'legendary',
+                    stats: { hp_bonus: balance.hp },
+                    description: '抽3張卡。其中每抽到一張人屬性卡，該卡+5攻擊力',
+                    effects: {
+                        on_play: async function(gameState) {
+                            let drawnCards = [];
+                            let humanCardsBoosted = 0;
+                            
+                            for (let i = 0; i < 3 && gameState.player.deck.length > 0; i++) {
+                                const drawnCard = gameState.player.deck.pop();
+                                gameState.player.hand.push(drawnCard);
+                                drawnCards.push(drawnCard.name);
+                                
+                                if (drawnCard.attribute === 'human') {
+                                    drawnCard.permanentBonus = drawnCard.permanentBonus || {};
+                                    drawnCard.permanentBonus.attack = (drawnCard.permanentBonus.attack || 0) + 5;
+                                    humanCardsBoosted++;
+                                }
+                            }
+                            
+                            return { 
+                                success: true, 
+                                description: `抽到${drawnCards.length}張卡，${humanCardsBoosted}張人屬卡+5攻擊力` 
+                            };
+                        }
+                    }
+                };
+            }
+
+            // 陰屬卡牌
+            static createAmbushCard() {
+                const balance = CARD_BALANCE.AMBUSH;
+                return {
+                    id: 'ambush',
+                    name: '偷襲',
+                    type: 'batter',
+                    attribute: 'yin',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '輔助：直接降低投手10點血量',
+                    effects: {
+                        on_support: async function(gameState) {
+                            gameState.pitcher.current_hp -= 10;
+                            gameState.pitcher.current_hp = Math.max(0, gameState.pitcher.current_hp);
+                            return { success: true, description: '直接對投手造成10點傷害' };
+                        }
+                    }
+                };
+            }
+
+            static createTimeStopCard() {
+                const balance = CARD_BALANCE.TIME_STOP;
+                return {
+                    id: 'time_stop',
+                    name: '時間暫停',
+                    type: 'spell',
+                    attribute: 'yin',
+                    rarity: 'legendary',
+                    stats: { hp_bonus: balance.hp },
+                    description: '投手跳過他的下一個回合',
+                    effects: {
+                        on_play: async function(gameState) {
+                            gameState.pitcher.skipNextTurn = true;
+                            return { success: true, description: '投手將跳過下一回合' };
+                        }
+                    }
+                };
+            }
+
+            // 陽屬卡牌
+            static createLateGameCard() {
+                const balance = CARD_BALANCE.LATE_GAME;
+                return {
+                    id: 'late_game',
+                    name: '專打後期',
+                    type: 'batter',
+                    attribute: 'yang',
+                    rarity: 'rare',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '打擊：本場你每抽1張牌，此卡攻擊力+3',
+                    effects: {
+                        on_strike: async function(gameState) {
+                            const cardsDrawn = gameState.cardsDrawnThisGame || 0;
+                            const bonus = cardsDrawn * 3;
+                            this.tempBonus = this.tempBonus || {};
+                            this.tempBonus.attack = (this.tempBonus.attack || 0) + bonus;
+                            return { success: true, description: `已抽${cardsDrawn}張牌，攻擊力+${bonus}` };
+                        }
+                    }
+                };
+            }
+
+            static createResurrectionCard() {
+                const balance = CARD_BALANCE.RESURRECTION;
+                return {
+                    id: 'resurrection',
+                    name: '死者蘇生',
+                    type: 'deathrattle',
+                    attribute: 'yang',
+                    rarity: 'legendary',
+                    stats: { hp_bonus: balance.hp, attack: balance.attack, crit: balance.crit },
+                    description: '死聲：你棄牌堆中所有攻擊力≥10的打者卡洗回牌庫。若牌庫≥15張，陽屬卡攻擊力+20；若<15張，抽1張陽屬卡',
+                    effects: {
+                        on_deathrattle: async function(gameState) {
+                            const strongCards = gameState.player.discard_pile.filter(
+                                card => card.type === 'batter' && (card.stats.attack + (card.tempBonus?.attack || 0)) >= 10
+                            );
+                            
+                            if (strongCards.length > 0) {
+                                strongCards.forEach(card => {
+                                    const index = gameState.player.discard_pile.indexOf(card);
+                                    gameState.player.discard_pile.splice(index, 1);
+                                    gameState.player.deck.push(card);
+                                });
+                                
+                                // 洗牌
+                                for (let i = gameState.player.deck.length - 1; i > 0; i--) {
+                                    const j = Math.floor(Math.random() * (i + 1));
+                                    [gameState.player.deck[i], gameState.player.deck[j]] = [gameState.player.deck[j], gameState.player.deck[i]];
+                                }
+                                
+                                if (gameState.player.deck.length >= 15) {
+                                    [...gameState.player.deck, ...gameState.player.hand].forEach(card => {
+                                        if (card.attribute === 'yang') {
+                                            card.permanentBonus = card.permanentBonus || {};
+                                            card.permanentBonus.attack = (card.permanentBonus.attack || 0) + 20;
+                                        }
+                                    });
+                                    return { success: true, description: `復活${strongCards.length}張卡牌，陽屬卡+20攻擊` };
+                                } else {
+                                    const yangCards = gameState.player.deck.filter(card => card.attribute === 'yang');
+                                    if (yangCards.length > 0) {
+                                        const drawnCard = yangCards[Math.floor(Math.random() * yangCards.length)];
+                                        const deckIndex = gameState.player.deck.indexOf(drawnCard);
+                                        gameState.player.deck.splice(deckIndex, 1);
+                                        gameState.player.hand.push(drawnCard);
+                                    }
+                                    return { success: true, description: `復活${strongCards.length}張卡牌，抽1張陽屬卡` };
+                                }
+                            }
+                            
+                            return { success: false, reason: '棄牌堆中沒有符合條件的卡牌' };
+                        }
+                    }
+                };
+            }
             static getStats() {
                 const stats = {
                     total: this.cards.size,
@@ -1653,15 +2182,17 @@
                 this.uiManager.updateUI(this.gameState);
             }
             
+            // 修改：使用存在的卡牌ID创建测试牌组
             initializeDeck() {
-                // 創建測試牌組
+                // 创建测试牌组 - 只使用已注册的卡牌
                 const testDeckIds = [
                     'president', 'president', 'kindness', 'kindness', 
-                    'hero', 'hero', 'hero', 'shadow_devour', 'yinyang_harmony',
-                    'lottery', 'strongman', 'democracy', 'weapon_master', 'holy_light', 'evil_genius'
+                    'hero', 'hero', 'lottery', 'strongman', 'democracy',
+                    'shadow_devour', 'lone_shadow', 'evil_genius', 
+                    'weapon_master', 'yinyang_harmony', 'holy_light'
                 ];
 
-                // 轉換為完整卡牌對象
+                // 转换为完整卡牌对象
                 this.gameState.player.deck = testDeckIds.map(id => CardRegistry.create(id));
                 this.turnSystem.shuffleDeck(this.gameState.player.deck);
                 

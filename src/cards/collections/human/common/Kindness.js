@@ -1,11 +1,11 @@
-// 2. 修復 src/cards/collections/human/common/Kindness.js - 移除測試文字
+// 修正慈爱卡的 on_support 效果实现
 export class KindnessCard {
   static create() {
     const balance = CARD_BALANCE.KINDNESS;
     
     return {
       id: 'kindness',
-      name: '慈愛', // 移除了測試文字
+      name: '慈愛',
       type: 'batter',
       attribute: 'human',
       rarity: 'common',
@@ -17,6 +17,7 @@ export class KindnessCard {
       description: '輔助：此回合中，你打出的人屬性打者卡攻擊力+10。',
       
       effects: {
+        // 修正：应该是给人属性打者卡加攻击力，而不是给投手减攻击力
         on_support: async function(gameState) {
           gameState.turnBuffs = gameState.turnBuffs || [];
           gameState.turnBuffs.push({
