@@ -1,5 +1,6 @@
+// 修正文件路径：从 yin/common/ 移动到 yin/
 // 孤影卡的完整实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
 
 export class LoneShadowCard {
   static create() {
@@ -10,7 +11,7 @@ export class LoneShadowCard {
       name: '孤影',
       type: 'spell',
       attribute: 'yin',
-      rarity: 'common',
+      rarity: 'common',  // 确认稀有度为 common
       stats: {
         hp_bonus: balance.hp
       },

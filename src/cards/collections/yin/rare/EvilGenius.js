@@ -1,5 +1,6 @@
+// 修正文件路径：从 yin/rare/ 移动到 yin/
 // 邪恶天才卡的完整实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
 
 export class EvilGeniusCard {
   static create() {
@@ -10,7 +11,7 @@ export class EvilGeniusCard {
       name: '邪惡天才',
       type: 'batter',
       attribute: 'yin',
-      rarity: 'rare',
+      rarity: 'rare',  // 确认稀有度为 rare
       stats: {
         hp_bonus: balance.hp,
         attack: balance.attack,

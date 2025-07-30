@@ -1,6 +1,7 @@
-// cards/collections/yin/common/ShadowDevour.js
-import { PitcherDebuffKeyword } from '../../../../effects/keywords/PitcherDebuff.js';
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+// 修正文件路径：从 yin/common/ 移动到 yin/
+// 暗影吞噬卡的完整实现
+import { PitcherDebuffKeyword } from '../../../effects/keywords/PitcherDebuff.js';
+import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
 
 export class ShadowDevourCard {
   static create() {
@@ -11,7 +12,7 @@ export class ShadowDevourCard {
       name: '暗影吞噬',
       type: 'batter',
       attribute: 'yin',
-      rarity: 'common',
+      rarity: 'common',  // 确认稀有度为 common
       stats: {
         hp_bonus: balance.hp,
         attack: balance.attack,
@@ -21,7 +22,6 @@ export class ShadowDevourCard {
       
       effects: {
         on_strike: async function(gameState) {
-          // 檢查本回合是否打出了其他陰屬卡
           const turnPlayedCards = gameState.turnPlayedCards || [];
           const otherYinCards = turnPlayedCards.filter(card => 
             card.attribute === 'yin' && card.id !== this.id
