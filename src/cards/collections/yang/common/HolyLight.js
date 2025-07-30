@@ -1,5 +1,6 @@
+// 修正文件路径：从 yang/common/ 移动到 yang/
 // 圣光卡的完整实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
 
 export class HolyLightCard {
   static create() {

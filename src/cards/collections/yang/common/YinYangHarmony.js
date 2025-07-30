@@ -1,5 +1,6 @@
-// cards/collections/yang/rare/YinYangHarmony.js
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+// 修正文件路径：从 yin/rare/ 移动到 yang/
+// cards/collections/yang/YinYangHarmony.js
+import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
 
 export class YinYangHarmonyCard {
   static create() {
@@ -20,7 +21,7 @@ export class YinYangHarmonyCard {
       
       effects: {
         on_strike: async function(gameState) {
-          const supportCard = gameState.supportZone[0];
+          const supportCard = gameState.player.support_zone;
           
           if (supportCard && supportCard.attribute === 'yin') {
             const currentAttack = this.stats.attack + (this.tempBonus?.attack || 0);

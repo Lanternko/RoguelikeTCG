@@ -1,3 +1,4 @@
+// 修正文件名拼写错误：BenevelontLegacy.js -> BenevolentLegacy.js
 // cards/collections/human/rare/BenevolentLegacy.js
 import { DrawKeyword } from '../../../../effects/keywords/DrawKeyword.js';
 import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
@@ -24,9 +25,14 @@ export class BenevolentLegacyCard {
           let effects = [];
           
           // 檢查場上的陰陽屬性
-          const fieldCards = [...gameState.strikeZone, ...gameState.supportZone].filter(Boolean);
+          const fieldCards = [
+            gameState.player.strike_zone, 
+            gameState.player.support_zone, 
+            gameState.player.spell_zone
+          ].filter(Boolean);
+          
           const hasYinYang = fieldCards.some(card => 
-            card.attribute === 'yin' || card.attribute === 'yang'
+            card && (card.attribute === 'yin' || card.attribute === 'yang')
           );
           
           if (hasYinYang) {
@@ -37,14 +43,14 @@ export class BenevolentLegacyCard {
           
           // 檢查天地屬性
           const hasHeavenEarth = fieldCards.some(card => 
-            card.attribute === 'heaven' || card.attribute === 'earth'
+            card && (card.attribute === 'heaven' || card.attribute === 'earth')
           );
           
           if (hasHeavenEarth && !this.hasUsedDrawEffect) {
             // 棄1張牌
             if (gameState.player.hand.length > 1) {
               const discarded = gameState.player.hand.pop();
-              gameState.player.discard.push(discarded);
+              gameState.player.discard_pile.push(discarded);
               
               // 抽2張牌
               for (let i = 0; i < 2; i++) {

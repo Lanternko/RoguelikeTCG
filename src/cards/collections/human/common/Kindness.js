@@ -1,4 +1,7 @@
-// 修正慈爱卡的 on_support 效果实现
+// 修正慈愛卡的导入语句和效果实现
+import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+import { GAME_BALANCE } from '../../../../data/balance/GameBalance.js';
+
 export class KindnessCard {
   static create() {
     const balance = CARD_BALANCE.KINDNESS;
