@@ -1,37 +1,35 @@
-// 修正文件路径：从 yin/rare/ 移动到 yin/
-// 邪恶天才卡的完整实现
-import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
+// src/cards/collections/yin/rare/EvilGenius.js
+import { CardUtils } from '../../../CardUtils.js';
 
 export class EvilGeniusCard {
   static create() {
-    const balance = CARD_BALANCE.EVIL_GENIUS;
-    
     return {
       id: 'evil_genius',
       name: '邪惡天才',
       type: 'batter',
       attribute: 'yin',
-      rarity: 'rare',  // 确认稀有度为 rare
+      rarity: 'rare',
       stats: {
-        hp_bonus: balance.hp,
-        attack: balance.attack,
-        crit: balance.crit
+        hp_bonus: 10,    // 中等血量
+        attack: 26,      // 高攻擊，配合吸取效果
+        crit: 45         // 中等暴擊
       },
-      description: '打擊：吸取投手5點攻擊力',
+      description: '打擊：吸取投手5點攻擊力。',
+      balanceNotes: '雙重效果卡：自我增強+敵人削弱。稀有卡的複雜機制。',
+      designNotes: '邪惡的智慧能夠竊取敵人的力量為己所用，體現陰屬性的狡詐。',
+      
       effects: {
         on_strike: async function(gameState) {
           // 減少投手攻擊力
-          gameState.pitcher.tempDebuff = gameState.pitcher.tempDebuff || {};
-          gameState.pitcher.tempDebuff.attack = 
-            (gameState.pitcher.tempDebuff.attack || 0) - 5;
+          const reduction = CardUtils.reducePitcherAttack(gameState, 5);
           
           // 增加自己攻擊力
           this.tempBonus = this.tempBonus || {};
           this.tempBonus.attack = (this.tempBonus.attack || 0) + 5;
           
-          return {
+          return { 
             success: true,
-            description: '吸取投手5點攻擊力'
+            description: `吸取投手${reduction}點攻擊力` 
           };
         }
       }

@@ -1,11 +1,8 @@
-// 修正文件路径：从 yang/common/ 移动到 yang/
-// 圣光卡的完整实现
-import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
+// src/cards/collections/yang/common/HolyLight.js
+import { CardUtils } from '../../../CardUtils.js';
 
 export class HolyLightCard {
   static create() {
-    const balance = CARD_BALANCE.HOLY_LIGHT;
-    
     return {
       id: 'holy_light',
       name: '聖光',
@@ -13,27 +10,22 @@ export class HolyLightCard {
       attribute: 'yang',
       rarity: 'common',
       stats: {
-        hp_bonus: balance.hp
+        hp_bonus: 0,     // 法術卡無數值
+        attack: 0,
+        crit: 0
       },
-      description: '選擇一張手牌，其攻擊力+8(本回合)。抽1張牌',
+      description: '法術：回復15點生命值。',
+      balanceNotes: '純治療法術，生存工具。陽屬性的經典治療效果。',
+      designNotes: '神聖的光芒具有治癒的力量，體現陽屬性的正面能量。',
+      
       effects: {
         on_play: async function(gameState) {
-          // 簡化實現：給第一張打者卡+8攻擊力
-          const batterCard = gameState.player.hand.find(card => card.type === 'batter');
-          if (batterCard) {
-            batterCard.tempBonus = batterCard.tempBonus || {};
-            batterCard.tempBonus.attack = (batterCard.tempBonus.attack || 0) + 8;
-          }
+          const healAmount = 15;
+          const actualHeal = CardUtils.healPlayer(gameState, healAmount);
           
-          // 抽1張牌
-          if (gameState.player.deck.length > 0) {
-            const drawnCard = gameState.player.deck.pop();
-            gameState.player.hand.push(drawnCard);
-          }
-          
-          return {
+          return { 
             success: true,
-            description: batterCard ? `${batterCard.name}攻擊力+8，抽1張牌` : '抽1張牌'
+            description: `回復 ${actualHeal} 點生命值` 
           };
         }
       }

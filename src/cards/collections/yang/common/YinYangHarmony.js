@@ -1,11 +1,8 @@
-// 修正文件路径：从 yin/rare/ 移动到 yang/
-// cards/collections/yang/YinYangHarmony.js
-import { CARD_BALANCE } from '../../../data/balance/CardBalance.js';
+// src/cards/collections/yang/rare/YinYangHarmony.js
+import { CardUtils } from '../../../CardUtils.js';
 
 export class YinYangHarmonyCard {
   static create() {
-    const balance = CARD_BALANCE.YIN_YANG_HARMONY;
-    
     return {
       id: 'yinyang_harmony',
       name: '陰陽調和',
@@ -13,25 +10,40 @@ export class YinYangHarmonyCard {
       attribute: 'yang',
       rarity: 'rare',
       stats: {
-        hp_bonus: balance.hp,
-        attack: balance.attack,
-        crit: balance.crit
+        hp_bonus: 12,    // 中等血量
+        attack: 24,      // 基礎攻擊，可大幅增強
+        crit: 50         // 高暴擊率
       },
-      description: '打擊：若你的輔助格為陰屬性，此卡攻擊力變為兩倍。',
+      description: '打擊：若場上有陰或陽屬性卡，攻擊力+20。',
+      balanceNotes: '需要構築支持的爆發卡。條件滿足時非常強力。',
+      designNotes: '陰陽平衡的力量，當場上有對立屬性時能發揮最大威力。',
       
       effects: {
         on_strike: async function(gameState) {
-          const supportCard = gameState.player.support_zone;
+          const fieldCards = [
+            gameState.player.strike_zone,
+            gameState.player.support_zone,
+            gameState.player.spell_zone
+          ].filter(Boolean);
           
-          if (supportCard && supportCard.attribute === 'yin') {
-            const currentAttack = this.stats.attack + (this.tempBonus?.attack || 0);
+          const hasYinYang = fieldCards.some(card => 
+            card && (card.attribute === 'yin' || card.attribute === 'yang')
+          );
+          
+          if (hasYinYang) {
             this.tempBonus = this.tempBonus || {};
-            this.tempBonus.attack = currentAttack; // 使攻擊力變為兩倍
+            this.tempBonus.attack = (this.tempBonus.attack || 0) + 20;
             
-            return { success: true, description: '輔助格為陰屬性，攻擊力翻倍！' };
+            return { 
+              success: true,
+              description: '場上有陰/陽屬性，攻擊力+20' 
+            };
           }
           
-          return { success: false, reason: '輔助格不是陰屬性' };
+          return { 
+            success: false,
+            description: '場上無陰/陽屬性卡，無法觸發效果' 
+          };
         }
       }
     };

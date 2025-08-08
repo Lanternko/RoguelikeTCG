@@ -1,37 +1,32 @@
-// 修正慈愛卡的导入语句和效果实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
-import { GAME_BALANCE } from '../../../../data/balance/GameBalance.js';
-
+// src/cards/collections/human/common/Kindness.js
 export class KindnessCard {
   static create() {
-    const balance = CARD_BALANCE.KINDNESS;
-    
     return {
       id: 'kindness',
       name: '慈愛',
-      type: 'batter',
+      type: 'support',
       attribute: 'human',
       rarity: 'common',
       stats: {
-        hp_bonus: balance.hp,
-        attack: balance.attack,
-        crit: balance.crit
+        hp_bonus: 10,    // 較低血量，主要提供輔助
+        attack: 15,      // 輔助卡也有攻擊力
+        crit: 40         // 高暴擊補償低攻擊
       },
-      description: '輔助：此回合中，你打出的人屬性打者卡攻擊力+10。',
+      description: '輔助：本回合所有人屬性打者攻擊力+10。',
+      balanceNotes: '團隊增益卡，人屬構築的核心支援。數值較低但團隊效果強。',
+      designNotes: '慈愛的力量能激勵所有人類戰士，體現團結就是力量。',
       
       effects: {
-        // 修正：应该是给人属性打者卡加攻击力，而不是给投手减攻击力
         on_support: async function(gameState) {
-          gameState.turnBuffs = gameState.turnBuffs || [];
           gameState.turnBuffs.push({
             type: 'human_batter_attack_boost',
-            value: GAME_BALANCE.KINDNESS_BOOST || 10,
-            source: this.name
+            value: 10,
+            source: '慈愛'
           });
           
           return { 
-            success: true, 
-            description: '人屬性打者卡本回合攻擊力+10' 
+            success: true,
+            description: '本回合人屬性打者攻擊力+10' 
           };
         }
       }

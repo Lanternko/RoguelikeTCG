@@ -1,40 +1,36 @@
-// 大乐透卡的完整实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
+// src/cards/collections/human/common/Lottery.js
+import { CardUtils } from '../../../CardUtils.js';
 
 export class LotteryCard {
   static create() {
-    const balance = CARD_BALANCE.LOTTERY;
-    
     return {
       id: 'lottery',
-      name: '大樂透',
+      name: '樂透',
       type: 'spell',
       attribute: 'human',
       rarity: 'common',
       stats: {
-        hp_bonus: balance.hp
+        hp_bonus: 0,     // 法術卡無血量加成
+        attack: 0,       // 法術卡無攻擊力
+        crit: 0          // 法術卡無暴擊
       },
-      description: '抽1張人屬性打者卡',
+      description: '法術：抽2張牌。',
+      balanceNotes: '純工具卡，提供手牌資源。無戰鬥能力但能加速抽牌。',
+      designNotes: '幸運的象徵，代表機會和可能性，為玩家提供更多選擇。',
+      
       effects: {
         on_play: async function(gameState) {
-          const humanBatters = gameState.player.deck.filter(
-            card => card.attribute === 'human' && card.type === 'batter'
-          );
+          let cardsDrawn = 0;
           
-          if (humanBatters.length > 0) {
-            const randomCard = humanBatters[Math.floor(Math.random() * humanBatters.length)];
-            gameState.player.deck = gameState.player.deck.filter(c => c !== randomCard);
-            gameState.player.hand.push(randomCard);
-            
-            return {
-              success: true,
-              description: `抽到了 ${randomCard.name}`
-            };
+          for (let i = 0; i < 2; i++) {
+            if (await CardUtils.drawCard(gameState)) {
+              cardsDrawn++;
+            }
           }
           
-          return {
-            success: false,
-            reason: '牌庫中沒有人屬性打者卡'
+          return { 
+            success: true,
+            description: `抽了 ${cardsDrawn} 張牌` 
           };
         }
       }

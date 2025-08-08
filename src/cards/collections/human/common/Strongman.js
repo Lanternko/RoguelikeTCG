@@ -1,23 +1,22 @@
-// 猛男卡的完整实现
-import { CARD_BALANCE } from '../../../../data/balance/CardBalance.js';
-
+// src/cards/collections/human/common/Strongman.js
 export class StrongmanCard {
   static create() {
-    const balance = CARD_BALANCE.STRONGMAN;
-    
     return {
       id: 'strongman',
-      name: '猛男',
+      name: '壯漢',
       type: 'batter',
       attribute: 'human',
       rarity: 'common',
       stats: {
-        hp_bonus: balance.hp,
-        attack: balance.attack,
-        crit: balance.crit
+        hp_bonus: 20,    // 高血量加成，符合壯漢形象
+        attack: 30,      // 高攻擊力
+        crit: 20         // 低暴擊，穩定型
       },
-      description: '高血量的強力打者',
-      effects: {}
+      description: '高攻擊力，低暴擊的穩定輸出。',
+      balanceNotes: '坦克型打者，穩定但缺乏爆發。血量和攻擊都高，但暴擊低。',
+      designNotes: '體格強壯的戰士，力大無窮但動作較為笨重，不易打出精準攻擊。',
+      
+      effects: {} // 純數值卡，體現穩定強壯的特質
     };
   }
 }
