@@ -1,6 +1,6 @@
-// src/cards/CardRegistry.js - Complete Import-Based Registry
+// ===== 👥 人類主題卡牌庫 - 完整實作 =====
 
-// Import all individual card classes
+// src/cards/CardRegistry.js - 修復版本，統一路徑
 import { PresidentCard } from './collections/human/common/President.js';
 import { KindnessCard } from './collections/human/common/Kindness.js';
 import { HeroCard } from './collections/human/common/Hero.js';
@@ -8,38 +8,23 @@ import { LotteryCard } from './collections/human/common/Lottery.js';
 import { StrongmanCard } from './collections/human/common/Strongman.js';
 import { DemocracyCard } from './collections/human/common/Democracy.js';
 
-// Yin attribute cards
+// 陰陽輔助卡
 import { ShadowDevourCard } from './collections/yin/common/ShadowDevour.js';
-import { LoneShadowCard } from './collections/yin/common/LoneShadow.js';
 import { EvilGeniusCard } from './collections/yin/rare/EvilGenius.js';
-
-// Yang attribute cards
 import { HolyLightCard } from './collections/yang/common/HolyLight.js';
-import { YinYangHarmonyCard } from './collections/yang/rare/YinYangHarmony.js';
 
-// Heaven attribute cards
-import { WeaponMasterCard } from './collections/heaven/rare/WeaponMaster.js';
-
-/**
- * 🎴 卡牌註冊表 - 完整版本
- * 每張卡牌都有自己的獨立文件，這裡只負責註冊和管理
- */
 export class CardRegistry {
   static cards = new Map();
   static initialized = false;
 
-  /**
-   * 🔧 初始化卡牌註冊表
-   */
   static async initialize() {
-    console.log('🔧 初始化卡牌註冊表 (完整版)...');
+    console.log('🔧 初始化人類主題卡牌庫...');
     
     try {
-      this.registerAllCards();
+      this.registerHumanThemeCards();
       this.initialized = true;
-      console.log(`✅ 卡牌註冊表初始化完成，共 ${this.cards.size} 張卡牌`);
+      console.log(`✅ 人類主題卡牌庫初始化完成，共 ${this.cards.size} 張卡牌`);
       
-      // 驗證所有卡牌
       this.validateAllCards();
       
     } catch (error) {
@@ -48,11 +33,8 @@ export class CardRegistry {
     }
   }
 
-  /**
-   * 📚 註冊所有卡牌
-   */
-  static registerAllCards() {
-    // Human attribute cards - 人屬性卡牌
+  static registerHumanThemeCards() {
+    // 👥 人類核心卡牌
     this.registerCard('president', PresidentCard);
     this.registerCard('kindness', KindnessCard);
     this.registerCard('hero', HeroCard);
@@ -60,54 +42,36 @@ export class CardRegistry {
     this.registerCard('strongman', StrongmanCard);
     this.registerCard('democracy', DemocracyCard);
     
-    // Yin attribute cards - 陰屬性卡牌
+    // 🌙 陰屬性輔助
     this.registerCard('shadow_devour', ShadowDevourCard);
-    this.registerCard('lone_shadow', LoneShadowCard);
     this.registerCard('evil_genius', EvilGeniusCard);
     
-    // Yang attribute cards - 陽屬性卡牌
+    // ☀️ 陽屬性輔助
     this.registerCard('holy_light', HolyLightCard);
-    this.registerCard('yinyang_harmony', YinYangHarmonyCard);
     
-    // Heaven attribute cards - 天屬性卡牌
-    this.registerCard('weapon_master', WeaponMasterCard);
-    
-    console.log('📚 所有卡牌註冊完成');
+    console.log('📚 人類主題卡牌註冊完成');
   }
 
-  /**
-   * 📝 註冊單張卡牌
-   */
   static registerCard(id, cardClass) {
-    if (this.cards.has(id)) {
-      console.warn(`⚠️ 卡牌 ${id} 已存在，將被覆蓋`);
-    }
-    
     this.cards.set(id, cardClass);
     console.log(`✅ 註冊卡牌: ${id}`);
   }
 
-  /**
-   * 🎴 創建卡牌實例
-   */
   static create(cardId) {
     if (!this.initialized) {
-      throw new Error('CardRegistry 尚未初始化，請先調用 initialize()');
+      throw new Error('CardRegistry 尚未初始化');
     }
     
     if (!this.cards.has(cardId)) {
-      const availableCards = Array.from(this.cards.keys()).join(', ');
-      throw new Error(`卡牌 ${cardId} 不存在。可用卡牌: ${availableCards}`);
+      throw new Error(`卡牌 ${cardId} 不存在。可用卡牌: ${Array.from(this.cards.keys()).join(', ')}`);
     }
     
     try {
       const CardClass = this.cards.get(cardId);
       const card = CardClass.create();
       
-      // 確保卡牌ID正確
       if (card.id !== cardId) {
-        console.warn(`⚠️ 卡牌 ${cardId} 的內部ID不匹配: ${card.id}`);
-        card.id = cardId; // 修正ID
+        card.id = cardId;
       }
       
       return card;
@@ -118,448 +82,273 @@ export class CardRegistry {
     }
   }
 
-  /**
-   * ✅ 驗證所有卡牌
-   */
   static validateAllCards() {
-    console.log('🔍 驗證所有卡牌...');
+    console.log('🔍 驗證人類主題卡牌...');
     
     let validCount = 0;
     let invalidCount = 0;
-    const errors = [];
     
     for (const [cardId] of this.cards) {
       try {
         const card = this.create(cardId);
-        const validation = this.validateCard(card);
-        
-        if (validation.isValid) {
+        if (this.validateCard(card).isValid) {
           validCount++;
         } else {
           invalidCount++;
-          errors.push(`${cardId}: ${validation.errors.join(', ')}`);
         }
-        
       } catch (error) {
         invalidCount++;
-        errors.push(`${cardId}: 創建失敗 - ${error.message}`);
+        console.error(`❌ ${cardId}: ${error.message}`);
       }
     }
     
     console.log(`✅ 驗證完成: ${validCount} 張有效, ${invalidCount} 張無效`);
-    
-    if (errors.length > 0) {
-      console.warn('⚠️ 發現問題:');
-      errors.forEach(error => console.warn(`  - ${error}`));
-    }
   }
 
-  /**
-   * 🔍 驗證單張卡牌
-   */
   static validateCard(card) {
     const errors = [];
     
-    // 檢查必要屬性
-    const requiredFields = ['id', 'name', 'type', 'attribute', 'rarity', 'stats', 'description'];
-    requiredFields.forEach(field => {
+    const required = ['id', 'name', 'type', 'attribute', 'rarity', 'stats', 'description'];
+    required.forEach(field => {
       if (!card[field]) {
         errors.push(`缺少必要屬性: ${field}`);
       }
     });
     
-    // 檢查stats結構
     if (card.stats) {
-      const requiredStats = ['hp_bonus', 'attack', 'crit'];
-      requiredStats.forEach(stat => {
-        if (typeof card.stats[stat] !== 'number') {
-          errors.push(`stats.${stat} 必須是數字`);
-        }
-      });
-    }
-    
-    // 檢查屬性值有效性
-    const validTypes = ['batter', 'support', 'spell', 'deathrattle'];
-    if (card.type && !validTypes.includes(card.type)) {
-      errors.push(`無效的類型: ${card.type}`);
-    }
-    
-    const validAttributes = ['human', 'yin', 'yang', 'heaven', 'earth'];
-    if (card.attribute && !validAttributes.includes(card.attribute)) {
-      errors.push(`無效的屬性: ${card.attribute}`);
-    }
-    
-    const validRarities = ['common', 'rare', 'legendary'];
-    if (card.rarity && !validRarities.includes(card.rarity)) {
-      errors.push(`無效的稀有度: ${card.rarity}`);
-    }
-    
-    // 檢查數值合理性
-    if (card.stats) {
-      if (card.stats.attack < 0 || card.stats.attack > 100) {
-        errors.push(`攻擊力超出合理範圍: ${card.stats.attack}`);
+      if (typeof card.stats.attack !== 'number' || card.stats.attack < 0) {
+        errors.push('攻擊力必須是非負數字');
       }
-      if (card.stats.crit < 0 || card.stats.crit > 200) {
-        errors.push(`暴擊率超出合理範圍: ${card.stats.crit}`);
+      if (typeof card.stats.crit !== 'number' || card.stats.crit < 0) {
+        errors.push('暴擊率必須是非負數字');
       }
-      if (card.stats.hp_bonus < 0 || card.stats.hp_bonus > 50) {
-        errors.push(`血量加成超出合理範圍: ${card.stats.hp_bonus}`);
+      if (typeof card.stats.hp_bonus !== 'number' || card.stats.hp_bonus < 0) {
+        errors.push('血量加成必須是非負數字');
       }
     }
     
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+    return { isValid: errors.length === 0, errors };
   }
 
-  /**
-   * 📊 獲取統計信息
-   */
-  static getStats() {
-    if (!this.initialized) {
-      return { total: 0, error: '未初始化' };
-    }
-    
-    const stats = { 
-      total: this.cards.size,
-      byAttribute: {},
-      byType: {},
-      byRarity: {},
-      powerLevels: [],
-      averageStats: {
-        attack: 0,
-        crit: 0,
-        hp_bonus: 0
-      }
-    };
-    
-    let totalAttack = 0;
-    let totalCrit = 0;
-    let totalHP = 0;
-    
-    for (const [cardId] of this.cards) {
-      try {
-        const card = this.create(cardId);
-        
-        // 統計分佈
-        stats.byAttribute[card.attribute] = (stats.byAttribute[card.attribute] || 0) + 1;
-        stats.byType[card.type] = (stats.byType[card.type] || 0) + 1;
-        stats.byRarity[card.rarity] = (stats.byRarity[card.rarity] || 0) + 1;
-        
-        // 計算平均數值
-        totalAttack += card.stats.attack;
-        totalCrit += card.stats.crit;
-        totalHP += card.stats.hp_bonus;
-        
-        // 添加到力量等級列表
-        const powerLevel = this.calculatePowerLevel(card);
-        stats.powerLevels.push({
-          id: cardId,
-          name: card.name,
-          powerLevel
-        });
-        
-      } catch (error) {
-        console.warn(`統計時創建卡牌 ${cardId} 失敗:`, error);
-      }
-    }
-    
-    // 計算平均值
-    if (this.cards.size > 0) {
-      stats.averageStats.attack = Math.round(totalAttack / this.cards.size);
-      stats.averageStats.crit = Math.round(totalCrit / this.cards.size);
-      stats.averageStats.hp_bonus = Math.round(totalHP / this.cards.size);
-    }
-    
-    // 排序力量等級
-    stats.powerLevels.sort((a, b) => b.powerLevel - a.powerLevel);
-    
-    return stats;
-  }
-
-  /**
-   * 💪 計算卡牌力量等級
-   */
-  static calculatePowerLevel(card) {
-    const stats = card.stats;
-    
-    let score = 0;
-    
-    // 基礎分數計算
-    score += stats.attack * 2;                    // 攻擊力權重最高
-    score += (stats.crit / 100) * stats.attack;   // 暴擊按百分比計算
-    score += stats.hp_bonus * 0.5;                // 血量加成
-    
-    // 效果加成
-    if (card.effects && Object.keys(card.effects).length > 0) {
-      score += 10; // 有效果的卡牌+10分
-    }
-    
-    // 稀有度調整
-    const rarityMultiplier = {
-      'common': 1.0,
-      'rare': 1.15,
-      'legendary': 1.3
-    };
-    
-    score *= rarityMultiplier[card.rarity] || 1.0;
-    
-    return Math.round(score);
-  }
-
-  /**
-   * 🔍 獲取所有卡牌ID列表
-   */
   static getAllCardIds() {
     return Array.from(this.cards.keys());
   }
 
-  /**
-   * 🎯 按屬性獲取卡牌
-   */
-  static getCardsByAttribute(attribute) {
-    const cards = [];
-    
-    for (const [cardId] of this.cards) {
-      try {
-        const card = this.create(cardId);
-        if (card.attribute === attribute) {
-          cards.push(card);
-        }
-      } catch (error) {
-        console.warn(`獲取卡牌 ${cardId} 失敗:`, error);
-      }
-    }
-    
-    return cards;
+  static getHumanThemeDeckTemplate() {
+    return [
+      'president', 'president',        // 總統 x2
+      'kindness', 'kindness',          // 慈愛 x2
+      'hero', 'hero', 'hero',          // 英雄 x3
+      'strongman', 'strongman',        // 壯漢 x2
+      'democracy',                     // 民主 x1
+      'lottery', 'lottery',            // 樂透 x2
+      'shadow_devour',                 // 暗影吞噬 x1
+      'evil_genius',                   // 邪惡天才 x1
+      'holy_light'                     // 聖光 x1
+    ];
   }
 
-  /**
-   * 🎭 按類型獲取卡牌
-   */
-  static getCardsByType(type) {
-    const cards = [];
-    
-    for (const [cardId] of this.cards) {
-      try {
-        const card = this.create(cardId);
-        if (card.type === type) {
-          cards.push(card);
-        }
-      } catch (error) {
-        console.warn(`獲取卡牌 ${cardId} 失敗:`, error);
-      }
-    }
-    
-    return cards;
+  static createHumanThemeDeck() {
+    const template = this.getHumanThemeDeckTemplate();
+    return template.map(cardId => this.create(cardId));
   }
 
-  /**
-   * 💎 按稀有度獲取卡牌
-   */
-  static getCardsByRarity(rarity) {
-    const cards = [];
-    
-    for (const [cardId] of this.cards) {
-      try {
-        const card = this.create(cardId);
-        if (card.rarity === rarity) {
-          cards.push(card);
-        }
-      } catch (error) {
-        console.warn(`獲取卡牌 ${cardId} 失敗:`, error);
-      }
-    }
-    
-    return cards;
-  }
-
-  /**
-   * 🔍 搜索卡牌
-   */
-  static searchCards(query) {
-    const results = [];
-    const searchTerm = query.toLowerCase();
-    
-    for (const [cardId] of this.cards) {
-      try {
-        const card = this.create(cardId);
-        
-        // 搜索名稱、描述、屬性等
-        const searchFields = [
-          card.name,
-          card.description,
-          card.attribute,
-          card.type,
-          card.rarity,
-          cardId
-        ].map(field => field.toLowerCase());
-        
-        if (searchFields.some(field => field.includes(searchTerm))) {
-          results.push(card);
-        }
-        
-      } catch (error) {
-        console.warn(`搜索時創建卡牌 ${cardId} 失敗:`, error);
-      }
-    }
-    
-    return results;
-  }
-
-  /**
-   * 🎲 獲取隨機卡牌
-   */
-  static getRandomCard(filters = {}) {
-    let cardIds = Array.from(this.cards.keys());
-    
-    // 應用過濾器
-    if (filters.attribute) {
-      cardIds = cardIds.filter(id => {
-        try {
-          const card = this.create(id);
-          return card.attribute === filters.attribute;
-        } catch {
-          return false;
-        }
-      });
-    }
-    
-    if (filters.type) {
-      cardIds = cardIds.filter(id => {
-        try {
-          const card = this.create(id);
-          return card.type === filters.type;
-        } catch {
-          return false;
-        }
-      });
-    }
-    
-    if (filters.rarity) {
-      cardIds = cardIds.filter(id => {
-        try {
-          const card = this.create(id);
-          return card.rarity === filters.rarity;
-        } catch {
-          return false;
-        }
-      });
-    }
-    
-    if (cardIds.length === 0) {
-      return null;
-    }
-    
-    const randomId = cardIds[Math.floor(Math.random() * cardIds.length)];
-    return this.create(randomId);
-  }
-
-  /**
-   * 🎮 創建測試牌組
-   */
-  static createTestDeck(deckType = 'balanced') {
-    const testDecks = {
-      balanced: [
-        'president', 'president', 'kindness', 'hero', 'hero',
-        'strongman', 'democracy', 'lottery', 'shadow_devour',
-        'lone_shadow', 'evil_genius', 'yinyang_harmony',
-        'holy_light', 'weapon_master', 'weapon_master'
-      ],
-      
-      aggressive: [
-        'hero', 'hero', 'hero', 'strongman', 'strongman',
-        'lone_shadow', 'lone_shadow', 'evil_genius', 'evil_genius',
-        'weapon_master', 'weapon_master', 'yinyang_harmony',
-        'democracy', 'lottery', 'holy_light'
-      ],
-      
-      control: [
-        'kindness', 'kindness', 'democracy', 'democracy',
-        'shadow_devour', 'shadow_devour', 'lottery', 'lottery',
-        'holy_light', 'holy_light', 'president', 'president',
-        'hero', 'strongman', 'weapon_master'
-      ],
-      
-      human_tribal: [
-        'president', 'president', 'president', 'kindness', 'kindness',
-        'hero', 'hero', 'strongman', 'strongman', 'democracy',
-        'democracy', 'lottery', 'lottery', 'holy_light', 'weapon_master'
-      ]
+  static getDeckAnalysis(deck) {
+    const analysis = {
+      totalCards: deck.length,
+      byAttribute: {},
+      byType: {},
+      averageAttack: 0,
+      averageCrit: 0,
+      totalHP: 0
     };
-
-    const deckIds = testDecks[deckType] || testDecks.balanced;
-    return deckIds.map(id => this.create(id));
-  }
-
-  /**
-   * 📈 生成簡易報告
-   */
-  static generateSimpleReport() {
-    const stats = this.getStats();
     
-    return `
-🎴 卡牌註冊表報告
-===============
-總卡牌數: ${stats.total}
-
-屬性分佈:
-${Object.entries(stats.byAttribute).map(([attr, count]) => 
-  `  ${attr}: ${count}張`
-).join('\n')}
-
-類型分佈:
-${Object.entries(stats.byType).map(([type, count]) => 
-  `  ${type}: ${count}張`
-).join('\n')}
-
-稀有度分佈:
-${Object.entries(stats.byRarity).map(([rarity, count]) => 
-  `  ${rarity}: ${count}張`
-).join('\n')}
-
-平均數值:
-  攻擊力: ${stats.averageStats.attack}
-  暴擊率: ${stats.averageStats.crit}%
-  血量加成: ${stats.averageStats.hp_bonus}
-
-力量等級前3:
-${stats.powerLevels.slice(0, 3).map((card, index) => 
-  `  ${index + 1}. ${card.name} (${card.powerLevel}分)`
-).join('\n')}
-    `;
+    let totalAttack = 0;
+    let totalCrit = 0;
+    
+    deck.forEach(card => {
+      // 屬性統計
+      analysis.byAttribute[card.attribute] = (analysis.byAttribute[card.attribute] || 0) + 1;
+      
+      // 類型統計
+      analysis.byType[card.type] = (analysis.byType[card.type] || 0) + 1;
+      
+      // 數值累計
+      totalAttack += card.stats.attack;
+      totalCrit += card.stats.crit;
+      analysis.totalHP += card.stats.hp_bonus;
+    });
+    
+    if (deck.length > 0) {
+      analysis.averageAttack = Math.round(totalAttack / deck.length);
+      analysis.averageCrit = Math.round(totalCrit / deck.length);
+    }
+    
+    return analysis;
   }
 
-  /**
-   * 🔧 調試功能
-   */
   static debug() {
-    console.log('🔧 CardRegistry 調試信息:');
+    console.log('🔧 人類主題卡牌庫調試信息:');
     console.log(`初始化狀態: ${this.initialized}`);
     console.log(`註冊卡牌數量: ${this.cards.size}`);
     console.log(`可用卡牌: ${this.getAllCardIds().join(', ')}`);
     
-    // 測試創建所有卡牌
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const cardId of this.getAllCardIds()) {
-      try {
-        const card = this.create(cardId);
-        console.log(`✅ ${cardId}: ${card.name} (${card.type}, ${card.attribute}, ${card.rarity})`);
-        successCount++;
-      } catch (error) {
-        console.error(`❌ ${cardId}: ${error.message}`);
-        failCount++;
-      }
+    // 創建並分析範例牌組
+    try {
+      const deck = this.createHumanThemeDeck();
+      const analysis = this.getDeckAnalysis(deck);
+      
+      console.log('\n📊 人類主題牌組分析:');
+      console.log(`總卡牌: ${analysis.totalCards}張`);
+      console.log(`屬性分佈:`, analysis.byAttribute);
+      console.log(`類型分佈:`, analysis.byType);
+      console.log(`平均攻擊力: ${analysis.averageAttack}`);
+      console.log(`平均暴擊率: ${analysis.averageCrit}%`);
+      console.log(`總血量加成: ${analysis.totalHP}`);
+      
+    } catch (error) {
+      console.error('❌ 牌組分析失敗:', error);
     }
+  }
+}
+
+// ===== 📱 手機端適配準備 =====
+
+export class MobileAdapter {
+  static checkMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  static applyMobileStyles() {
+    if (!this.checkMobileDevice()) return;
     
-    console.log(`\n📊 測試結果: ${successCount} 成功, ${failCount} 失敗`);
+    console.log('📱 檢測到移動設備，應用移動端樣式...');
     
-    if (successCount > 0) {
-      console.log('\n📈 快速統計:');
-      console.log(this.generateSimpleReport());
+    const mobileCSS = `
+      /* 移動端適配樣式 */
+      .hand-card {
+        width: 24px !important;
+        height: 32px !important;
+        font-size: 8px !important;
+      }
+      
+      #hand-container {
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+      }
+      
+      .card-hover:hover {
+        transform: scale(1.1) !important;
+      }
+      
+      /* 戰鬥區域適配 */
+      #strike-zone, #support-zone, #spell-zone {
+        height: 120px !important;
+        min-height: 120px !important;
+      }
+      
+      /* 按鈕加大 */
+      button {
+        min-height: 44px !important;
+        font-size: 16px !important;
+      }
+      
+      /* 觸摸優化 */
+      .card-hover {
+        cursor: pointer;
+      }
+      
+      /* 防止縮放 */
+      .game-container {
+        touch-action: manipulation;
+        user-select: none;
+      }
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = mobileCSS;
+    document.head.appendChild(style);
+    
+    // 設置視口
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      document.head.appendChild(viewport);
+    }
+    viewport.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+  }
+
+  static setupTouchEvents() {
+    if (!this.checkMobileDevice()) return;
+    
+    console.log('📱 設置觸摸事件...');
+    
+    // 替代拖拽的點擊選擇機制
+    document.addEventListener('click', (e) => {
+      const card = e.target.closest('[data-card-index]');
+      if (card) {
+        this.handleCardSelection(card);
+      }
+    });
+  }
+
+  static handleCardSelection(cardElement) {
+    const cardIndex = cardElement.dataset.cardIndex;
+    
+    // 顯示區域選擇器
+    this.showZoneSelector(cardIndex);
+  }
+
+  static showZoneSelector(cardIndex) {
+    const selector = document.createElement('div');
+    selector.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    selector.innerHTML = `
+      <div class="bg-white rounded-lg p-4 mx-4 max-w-sm">
+        <h3 class="text-lg font-bold mb-4 text-gray-800">選擇放置區域</h3>
+        <div class="space-y-2">
+          <button onclick="playCardToZone(${cardIndex}, 'strike_zone')" 
+                  class="w-full bg-red-500 text-white py-3 rounded-lg">
+            🗡️ 打擊區
+          </button>
+          <button onclick="playCardToZone(${cardIndex}, 'support_zone')" 
+                  class="w-full bg-blue-500 text-white py-3 rounded-lg">
+            🛡️ 輔助區
+          </button>
+          <button onclick="playCardToZone(${cardIndex}, 'spell_zone')" 
+                  class="w-full bg-purple-500 text-white py-3 rounded-lg">
+            ✨ 法術區
+          </button>
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="w-full bg-gray-500 text-white py-2 rounded-lg">
+            取消
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(selector);
+    
+    // 全局函數供按鈕調用
+    window.playCardToZone = async (cardIndex, zone) => {
+      selector.remove();
+      
+      if (window.MyGoTCG && window.MyGoTCG.gameController) {
+        const result = await window.MyGoTCG.gameController.playCard(parseInt(cardIndex), zone);
+        if (result.success) {
+          window.MyGoTCG.uiManager.updateUI(window.MyGoTCG.gameController.getGameState());
+          window.MyGoTCG.uiManager.addLogEntry(`🎴 打出 ${result.card.name}`, 'success');
+        }
+      }
+    };
+  }
+
+  static init() {
+    this.applyMobileStyles();
+    this.setupTouchEvents();
+    
+    if (this.checkMobileDevice()) {
+      console.log('📱 移動端適配完成');
     }
   }
 }
