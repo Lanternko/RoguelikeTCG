@@ -1,6 +1,5 @@
-// ===== 👥 人類主題卡牌庫 - 完整實作 =====
+// src/cards/CardRegistry.js - 確保正確的 ES6 導出格式
 
-// src/cards/CardRegistry.js - 修復版本，統一路徑
 import { PresidentCard } from './collections/human/common/President.js';
 import { KindnessCard } from './collections/human/common/Kindness.js';
 import { HeroCard } from './collections/human/common/Hero.js';
@@ -13,10 +12,17 @@ import { ShadowDevourCard } from './collections/yin/common/ShadowDevour.js';
 import { EvilGeniusCard } from './collections/yin/rare/EvilGenius.js';
 import { HolyLightCard } from './collections/yang/common/HolyLight.js';
 
+/**
+ * 🎴 卡牌註冊表
+ * 統一管理所有卡牌的創建和驗證
+ */
 export class CardRegistry {
   static cards = new Map();
   static initialized = false;
 
+  /**
+   * 🚀 初始化卡牌註冊表
+   */
   static async initialize() {
     console.log('🔧 初始化人類主題卡牌庫...');
     
@@ -33,6 +39,9 @@ export class CardRegistry {
     }
   }
 
+  /**
+   * 📝 註冊人類主題卡牌
+   */
   static registerHumanThemeCards() {
     // 👥 人類核心卡牌
     this.registerCard('president', PresidentCard);
@@ -52,11 +61,17 @@ export class CardRegistry {
     console.log('📚 人類主題卡牌註冊完成');
   }
 
+  /**
+   * 📋 註冊單張卡牌
+   */
   static registerCard(id, cardClass) {
     this.cards.set(id, cardClass);
     console.log(`✅ 註冊卡牌: ${id}`);
   }
 
+  /**
+   * 🎴 創建卡牌實例
+   */
   static create(cardId) {
     if (!this.initialized) {
       throw new Error('CardRegistry 尚未初始化');
@@ -82,6 +97,9 @@ export class CardRegistry {
     }
   }
 
+  /**
+   * 🔍 驗證所有卡牌
+   */
   static validateAllCards() {
     console.log('🔍 驗證人類主題卡牌...');
     
@@ -105,6 +123,9 @@ export class CardRegistry {
     console.log(`✅ 驗證完成: ${validCount} 張有效, ${invalidCount} 張無效`);
   }
 
+  /**
+   * ✅ 驗證單張卡牌
+   */
   static validateCard(card) {
     const errors = [];
     
@@ -130,10 +151,16 @@ export class CardRegistry {
     return { isValid: errors.length === 0, errors };
   }
 
+  /**
+   * 📋 獲取所有卡牌ID
+   */
   static getAllCardIds() {
     return Array.from(this.cards.keys());
   }
 
+  /**
+   * 🎴 獲取人類主題牌組模板
+   */
   static getHumanThemeDeckTemplate() {
     return [
       'president', 'president',        // 總統 x2
@@ -148,11 +175,17 @@ export class CardRegistry {
     ];
   }
 
+  /**
+   * 🎯 創建人類主題牌組
+   */
   static createHumanThemeDeck() {
     const template = this.getHumanThemeDeckTemplate();
     return template.map(cardId => this.create(cardId));
   }
 
+  /**
+   * 📊 分析牌組
+   */
   static getDeckAnalysis(deck) {
     const analysis = {
       totalCards: deck.length,
@@ -187,6 +220,9 @@ export class CardRegistry {
     return analysis;
   }
 
+  /**
+   * 🔧 調試信息
+   */
   static debug() {
     console.log('🔧 人類主題卡牌庫調試信息:');
     console.log(`初始化狀態: ${this.initialized}`);
@@ -208,147 +244,6 @@ export class CardRegistry {
       
     } catch (error) {
       console.error('❌ 牌組分析失敗:', error);
-    }
-  }
-}
-
-// ===== 📱 手機端適配準備 =====
-
-export class MobileAdapter {
-  static checkMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  }
-
-  static applyMobileStyles() {
-    if (!this.checkMobileDevice()) return;
-    
-    console.log('📱 檢測到移動設備，應用移動端樣式...');
-    
-    const mobileCSS = `
-      /* 移動端適配樣式 */
-      .hand-card {
-        width: 24px !important;
-        height: 32px !important;
-        font-size: 8px !important;
-      }
-      
-      #hand-container {
-        flex-wrap: wrap !important;
-        justify-content: flex-start !important;
-      }
-      
-      .card-hover:hover {
-        transform: scale(1.1) !important;
-      }
-      
-      /* 戰鬥區域適配 */
-      #strike-zone, #support-zone, #spell-zone {
-        height: 120px !important;
-        min-height: 120px !important;
-      }
-      
-      /* 按鈕加大 */
-      button {
-        min-height: 44px !important;
-        font-size: 16px !important;
-      }
-      
-      /* 觸摸優化 */
-      .card-hover {
-        cursor: pointer;
-      }
-      
-      /* 防止縮放 */
-      .game-container {
-        touch-action: manipulation;
-        user-select: none;
-      }
-    `;
-    
-    const style = document.createElement('style');
-    style.textContent = mobileCSS;
-    document.head.appendChild(style);
-    
-    // 設置視口
-    let viewport = document.querySelector('meta[name="viewport"]');
-    if (!viewport) {
-      viewport = document.createElement('meta');
-      viewport.name = 'viewport';
-      document.head.appendChild(viewport);
-    }
-    viewport.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
-  }
-
-  static setupTouchEvents() {
-    if (!this.checkMobileDevice()) return;
-    
-    console.log('📱 設置觸摸事件...');
-    
-    // 替代拖拽的點擊選擇機制
-    document.addEventListener('click', (e) => {
-      const card = e.target.closest('[data-card-index]');
-      if (card) {
-        this.handleCardSelection(card);
-      }
-    });
-  }
-
-  static handleCardSelection(cardElement) {
-    const cardIndex = cardElement.dataset.cardIndex;
-    
-    // 顯示區域選擇器
-    this.showZoneSelector(cardIndex);
-  }
-
-  static showZoneSelector(cardIndex) {
-    const selector = document.createElement('div');
-    selector.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-    selector.innerHTML = `
-      <div class="bg-white rounded-lg p-4 mx-4 max-w-sm">
-        <h3 class="text-lg font-bold mb-4 text-gray-800">選擇放置區域</h3>
-        <div class="space-y-2">
-          <button onclick="playCardToZone(${cardIndex}, 'strike_zone')" 
-                  class="w-full bg-red-500 text-white py-3 rounded-lg">
-            🗡️ 打擊區
-          </button>
-          <button onclick="playCardToZone(${cardIndex}, 'support_zone')" 
-                  class="w-full bg-blue-500 text-white py-3 rounded-lg">
-            🛡️ 輔助區
-          </button>
-          <button onclick="playCardToZone(${cardIndex}, 'spell_zone')" 
-                  class="w-full bg-purple-500 text-white py-3 rounded-lg">
-            ✨ 法術區
-          </button>
-          <button onclick="this.closest('.fixed').remove()" 
-                  class="w-full bg-gray-500 text-white py-2 rounded-lg">
-            取消
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(selector);
-    
-    // 全局函數供按鈕調用
-    window.playCardToZone = async (cardIndex, zone) => {
-      selector.remove();
-      
-      if (window.MyGoTCG && window.MyGoTCG.gameController) {
-        const result = await window.MyGoTCG.gameController.playCard(parseInt(cardIndex), zone);
-        if (result.success) {
-          window.MyGoTCG.uiManager.updateUI(window.MyGoTCG.gameController.getGameState());
-          window.MyGoTCG.uiManager.addLogEntry(`🎴 打出 ${result.card.name}`, 'success');
-        }
-      }
-    };
-  }
-
-  static init() {
-    this.applyMobileStyles();
-    this.setupTouchEvents();
-    
-    if (this.checkMobileDevice()) {
-      console.log('📱 移動端適配完成');
     }
   }
 }

@@ -1,4 +1,4 @@
-// src/ui/UIManager.js - 統一UI管理系統
+// src/ui/UIManager.js - 驗證並修復導出格式
 
 /**
  * 🎨 UI管理器
@@ -107,33 +107,6 @@ export class UIManager {
           opacity: 1;
           transform: translateY(0) scale(1);
         }
-      }
-      
-      /* 法術卡特效 */
-      .spell-card {
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .spell-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        animation: spellShimmer 2s infinite;
-      }
-      
-      @keyframes spellShimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
-      }
-      
-      /* 死聲卡特效 */
-      .deathrattle-card {
-        box-shadow: inset 0 0 10px rgba(139, 69, 19, 0.5);
       }
       
       /* 傷害數字動畫 */
@@ -248,17 +221,6 @@ export class UIManager {
     if (this.elements.pitcherAttribute) {
       this.elements.pitcherAttribute.textContent = pitcher.attribute;
     }
-    
-    if (this.elements.pitcherStage) {
-      const stage = pitcher.stage || 1;
-      this.elements.pitcherStage.textContent = `第${stage}階段`;
-      
-      if (stage === 2) {
-        this.elements.pitcherStage.className = 'text-lg font-bold text-red-600 animate-pulse';
-      } else {
-        this.elements.pitcherStage.className = 'text-lg font-bold text-red-400';
-      }
-    }
   }
 
   /**
@@ -293,19 +255,11 @@ export class UIManager {
   renderCard(card, index) {
     const cardClasses = this.generateCardClasses(card.attribute, card.rarity);
     
-    // 根據卡牌類型添加特效類
-    let specialClasses = '';
-    if (card.type === 'spell') {
-      specialClasses += ' spell-card';
-    } else if (card.type === 'deathrattle') {
-      specialClasses += ' deathrattle-card';
-    }
-    
     // 動畫延遲
     const animationDelay = index < 7 ? index * 0.1 : 0;
     
     return `
-      <div class="${cardClasses}${specialClasses} hand-card" 
+      <div class="${cardClasses} hand-card" 
            draggable="true" 
            data-card-index="${index}" 
            style="animation-delay: ${animationDelay}s">
@@ -323,13 +277,13 @@ export class UIManager {
           <div class="text-center">
             <div class="text-xs opacity-75">攻擊</div>
             <div class="font-bold text-lg text-red-300">
-              ${card.stats.attack}${card.tempBonus?.attack ? `+${card.tempBonus.attack}` : ''}
+              ${card.stats?.attack || 0}${card.tempAttack ? `+${card.tempAttack}` : ''}
             </div>
           </div>
           <div class="text-center">
             <div class="text-xs opacity-75">暴擊</div>
             <div class="font-bold text-lg text-yellow-300">
-              ${card.stats.crit}${card.tempBonus?.crit ? `+${card.tempBonus.crit}` : ''}%
+              ${card.stats?.crit || 0}%
             </div>
           </div>
         </div>
@@ -353,23 +307,23 @@ export class UIManager {
     const baseClasses = 'relative w-28 h-36 rounded-xl p-3 text-xs cursor-pointer card-hover flex flex-col justify-between';
     
     const attributeColors = {
-      human: { base: 'human-base', dark: 'human-dark', text: 'human-text' },
-      yin: { base: 'yin-base', dark: 'yin-dark', text: 'yin-text' },
-      yang: { base: 'yang-base', dark: 'yang-dark', text: 'yang-text' },
-      heaven: { base: 'heaven-base', dark: 'heaven-dark', text: 'heaven-text' },
-      earth: { base: 'earth-base', dark: 'earth-dark', text: 'earth-text' }
+      human: 'bg-orange-700 text-orange-100',
+      yin: 'bg-purple-800 text-purple-100',
+      yang: 'bg-yellow-600 text-yellow-100',
+      heaven: 'bg-blue-700 text-blue-100',
+      earth: 'bg-green-700 text-green-100'
     };
     
     const rarityStyles = {
-      common: (colors) => `bg-${colors.base}`,
-      rare: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-lg`,
-      legendary: (colors) => `bg-gradient-to-br from-${colors.base} to-${colors.dark} shadow-xl ring-2 ring-legendary-ring animate-glow`
+      common: '',
+      rare: 'shadow-lg ring-2 ring-blue-400/50',
+      legendary: 'shadow-xl ring-2 ring-yellow-400/50 animate-glow'
     };
     
     const colors = attributeColors[attribute] || attributeColors.human;
-    const backgroundStyle = rarityStyles[rarity] ? rarityStyles[rarity](colors) : rarityStyles.common(colors);
+    const effects = rarityStyles[rarity] || rarityStyles.common;
     
-    return `${baseClasses} ${backgroundStyle} text-${colors.text}`;
+    return `${baseClasses} ${colors} ${effects}`;
   }
 
   /**
@@ -475,69 +429,6 @@ export class UIManager {
     while (this.elements.gameLog.children.length > maxEntries) {
       this.elements.gameLog.removeChild(this.elements.gameLog.firstChild);
     }
-  }
-
-  /**
-   * 💥 顯示傷害數字
-   */
-  showDamageNumber(damage, target = 'pitcher') {
-    const targetElement = target === 'pitcher' ? this.elements.pitcherHp : this.elements.playerHp;
-    if (!targetElement) return;
-    
-    const damageElement = document.createElement('div');
-    damageElement.className = 'damage-number absolute';
-    damageElement.textContent = `-${damage}`;
-    damageElement.style.cssText = `
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      color: #ef4444;
-      z-index: 1000;
-    `;
-    
-    targetElement.style.position = 'relative';
-    targetElement.appendChild(damageElement);
-    
-    setTimeout(() => {
-      if (damageElement.parentNode) {
-        damageElement.parentNode.removeChild(damageElement);
-      }
-    }, 2000);
-  }
-
-  /**
-   * 💚 顯示治療數字
-   */
-  showHealNumber(heal, target = 'player') {
-    const targetElement = target === 'player' ? this.elements.playerHp : this.elements.pitcherHp;
-    if (!targetElement) return;
-    
-    const healElement = document.createElement('div');
-    healElement.className = 'heal-number absolute';
-    healElement.textContent = `+${heal}`;
-    healElement.style.cssText = `
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      color: #10b981;
-      z-index: 1000;
-    `;
-    
-    targetElement.style.position = 'relative';
-    targetElement.appendChild(healElement);
-    
-    setTimeout(() => {
-      if (healElement.parentNode) {
-        healElement.parentNode.removeChild(healElement);
-      }
-    }, 2000);
-  }
-
-  /**
-   * 🎯 更新階段顯示
-   */
-  updatePhaseDisplay(phase) {
-    this.updateGameInfo({ gamePhase: phase });
   }
 
   /**
