@@ -1,10 +1,14 @@
-// main.js - 重構後的輕量化版本
+// main.js - 修復導入路徑
 // 只負責應用程序的初始化和啟動
 
-import { GameController } from './src/core/GameController.js';
-import { UIManager } from './src/ui/UIManager.js';
-import { CardRegistry } from './src/cards/CardRegistry.js';
-import { SeasonController } from './src/core/SeasonController.js';
+// ❌ 錯誤的路徑 (會導致 src/src/ 重複)
+// import { GameController } from './src/core/GameController.js';
+
+// ✅ 正確的路徑
+import { GameController } from './core/GameController.js';
+import { UIManager } from './ui/UIManager.js';
+import { CardRegistry } from './cards/CardRegistry.js';
+import { SeasonController } from './core/SeasonController.js';
 
 /**
  * 🎮 主應用程序類 - 輕量化版本
