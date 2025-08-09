@@ -1,342 +1,85 @@
-// src/core/GameController.js - Main Game Controller
+// src/core/GameController.js - 簡化版遊戲控制器
+
 import { EventBus } from './EventBus.js';
-import { GameState } from './GameState.js';
-import { CombatSystem } from '../systems/CombatSystem.js';
-import { TurnSystem } from '../systems/TurnSystem.js';
-import { EffectProcessor } from '../effects/EffectProcessor.js';
 import { CardRegistry } from '../cards/CardRegistry.js';
-import { GAME_BALANCE } from '../data/balance/GameBalance.js';
 
 /**
- * 🎮 遊戲控制器
- * 負責協調所有遊戲系統，管理遊戲狀態和流程
+ * 🎮 遊戲控制器 - 簡化版
+ * 負責管理遊戲邏輯和狀態
  */
 export class GameController {
   constructor() {
     console.log('🎮 初始化遊戲控制器...');
     
-    // 初始化核心系統
     this.eventBus = new EventBus();
-    this.gameState = new GameState();
-    
-    // 初始化子系統
-    this.combatSystem = new CombatSystem(this.eventBus);
-    this.turnSystem = new TurnSystem(this.eventBus);
-    this.effectProcessor = new EffectProcessor(this.eventBus);
-    
-    // 設置事件監聽
-    this.setupEventListeners();
-    
-    // 遊戲狀態標誌
+    this.uiManager = null;
+    this.gameState = null;
     this.isGameRunning = false;
-    this.gameStartTime = null;
     
-    console.log('✅ 遊戲控制器初始化完成');
+    // 記錄已觸發效果的卡牌，防止撤回後重複觸發
+    this.triggeredEffects = new Set();
+    
+    this.initializeDefaultGameState();
   }
 
   /**
-   * 🎧 設置事件監聽器
+   * 🔗 設置UI管理器
    */
-  setupEventListeners() {
-    // 監聽戰鬥事件
-    this.eventBus.on('damage_dealt', (data) => {
-      console.log(`💥 造成傷害: ${data.damage}`);
-      this.checkGameEnd();
-    });
-
-    // 監聽卡牌事件
-    this.eventBus.on('card_played', (data) => {
-      console.log(`🎴 卡牌打出: ${data.card.name}`);
-    });
-
-    // 監聽回合事件
-    this.eventBus.on('turn_start', (data) => {
-      console.log(`🌅 回合 ${data.turnCount} 開始`);
-    });
-
-    // 監聽投手階段轉換
-    this.eventBus.on('pitcher_stage_transition', (data) => {
-      console.log(`🔥 投手進入第 ${data.stage} 階段！`);
-    });
-
-    console.log('🎧 事件監聽器設置完成');
+  setUIManager(uiManager) {
+    this.uiManager = uiManager;
+    console.log('🔗 UI管理器已連接到遊戲控制器');
   }
 
   /**
-   * 🔄 重置遊戲狀態
+   * 🎯 初始化默認遊戲狀態
    */
-  resetGame() {
-    console.log('🔄 重置遊戲狀態...');
-    
-    this.gameState = new GameState();
-    this.isGameRunning = false;
-    this.gameStartTime = null;
-    
-    // 清理事件總線
-    this.eventBus.removeAllListeners();
-    this.setupEventListeners();
-    
-    console.log('✅ 遊戲狀態重置完成');
-  }
-
-  /**
-   * 🃏 初始化測試牌組
-   */
-  initializeTestDeck() {
-    console.log('🃏 初始化測試牌組...');
-    
-    const testDeckIds = [
-      // 人屬性卡牌
-      'president', 'president', 'kindness', 'kindness', 
-      'hero', 'hero', 'lottery', 'strongman', 'democracy',
-      
-      // 陰屬性卡牌
-      'shadow_devour', 'lone_shadow', 'evil_genius', 
-      
-      // 特殊卡牌
-      'weapon_master', 'yinyang_harmony', 'holy_light'
-    ];
-
-    // 創建牌組（存儲完整卡牌對象，不只是ID）
-    this.gameState.player.deck = testDeckIds.map(id => {
-      try {
-        return CardRegistry.create(id);
-      } catch (error) {
-        console.warn(`⚠️ 無法創建卡牌 ${id}:`, error);
-        return null;
-      }
-    }).filter(Boolean); // 移除空值
-
-    // 洗牌
-    this.turnSystem.shuffleDeck(this.gameState.player.deck);
-    
-    console.log(`🎴 牌組初始化完成: ${this.gameState.player.deck.length} 張卡牌`);
-  }
-
-  /**
-   * 🌅 開始新回合
-   */
-  async startNewTurn() {
-    console.log(`🌅 開始回合 ${this.gameState.turnCount}...`);
-    
-    if (!this.isGameRunning) {
-      this.isGameRunning = true;
-      this.gameStartTime = Date.now();
-    }
-
-    // 執行回合開始階段
-    await this.turnSystem.startOfTurn(this.gameState);
-    
-    // 執行抽牌階段
-    await this.turnSystem.drawPhase(this.gameState);
-    
-    // 進入出牌階段
-    this.gameState.gamePhase = 'PLAY_PHASE';
-    
-    // 發出回合開始事件
-    this.eventBus.emit('turn_start', {
-      turnCount: this.gameState.turnCount,
-      gamePhase: this.gameState.gamePhase
-    });
-  }
-
-  /**
-   * 🎴 打出卡牌
-   */
-  async playCard(cardIndex, targetZone) {
-    console.log(`🎴 嘗試打出卡牌 ${cardIndex} 到 ${targetZone}...`);
-    
-    // 驗證遊戲狀態
-    if (this.gameState.gamePhase !== 'PLAY_PHASE') {
-      console.warn('❌ 不在出牌階段！');
-      return { success: false, reason: '不在出牌階段' };
-    }
-
-    // 驗證卡牌索引
-    if (cardIndex < 0 || cardIndex >= this.gameState.player.hand.length) {
-      console.warn('❌ 無效的卡牌索引！');
-      return { success: false, reason: '無效的卡牌索引' };
-    }
-
-    const card = this.gameState.player.hand[cardIndex];
-    
-    // 驗證目標區域
-    if (!this.isValidCardPlacement(card, targetZone)) {
-      console.warn(`❌ 無法將 ${card.name} 放置到 ${targetZone}！`);
-      return { success: false, reason: '無效的放置目標' };
-    }
-
-    // 檢查目標區域是否為空
-    if (this.gameState.player[targetZone]) {
-      console.warn(`❌ ${targetZone} 已有卡牌！`);
-      return { success: false, reason: '目標區域已佔用' };
-    }
-
-    // 執行卡牌放置
-    this.gameState.player.hand.splice(cardIndex, 1);
-    this.gameState.player[targetZone] = card;
-    this.gameState.turnPlayedCards.push(card);
-
-    // 觸發 on_play 效果
-    if (card.effects?.on_play) {
-      console.log(`✨ 觸發 ${card.name} 的 on_play 效果`);
-      try {
-        const result = await this.effectProcessor.processEffect(
-          card.effects.on_play, 
-          card, 
-          this.gameState
-        );
-        if (result.success) {
-          console.log(`✅ on_play 效果: ${result.description}`);
-        }
-      } catch (error) {
-        console.error(`❌ on_play 效果執行失敗:`, error);
-      }
-    }
-
-    // 發出卡牌打出事件
-    this.eventBus.emit('card_played', {
-      card,
-      targetZone,
-      gameState: this.gameState
-    });
-
-    console.log(`✅ ${card.name} 成功放置到 ${targetZone}`);
-    return { success: true, card, targetZone };
-  }
-
-  /**
-   * 🎯 驗證卡牌放置是否有效
-   */
-  isValidCardPlacement(card, targetZone) {
-    const zoneTypeMap = {
-      'strike_zone': ['batter'],
-      'support_zone': ['batter', 'support'],
-      'spell_zone': ['spell', 'deathrattle']
-    };
-
-    return zoneTypeMap[targetZone]?.includes(card.type) || false;
-  }
-
-  /**
-   * ⚔️ 執行攻擊
-   */
-  async executeAttack() {
-    console.log('⚔️ 執行攻擊...');
-    
-    // 驗證遊戲狀態
-    if (this.gameState.gamePhase !== 'PLAY_PHASE') {
-      console.warn('❌ 不在出牌階段！');
-      return { success: false, reason: '不在出牌階段' };
-    }
-
-    // 驗證是否有打擊卡
-    if (!this.gameState.player.strike_zone) {
-      console.warn('❌ 請先放置打擊卡牌！');
-      return { success: false, reason: '沒有打擊卡牌' };
-    }
-
-    // 進入戰鬥階段
-    this.gameState.gamePhase = 'COMBAT_PHASE';
-    
-    // 執行戰鬥
-    const combatResult = await this.turnSystem.combatPhase(this.gameState, this.combatSystem);
-    
-    // 檢查遊戲結束
-    const gameEnd = this.checkGameEnd();
-    if (gameEnd.gameOver) {
-      return { success: true, combatResult, gameEnd };
-    }
-
-    // 投手攻擊
-    const pitcherDamage = this.combatSystem.calculatePitcherDamage(this.gameState);
-    this.gameState.player.current_hp -= pitcherDamage;
-    this.gameState.player.current_hp = Math.max(0, this.gameState.player.current_hp);
-
-    console.log(`🎯 戰鬥完成: 造成 ${combatResult.playerDamageDealt} 傷害, 受到 ${pitcherDamage} 傷害`);
-
-    return { 
-      success: true, 
-      combatResult, 
-      pitcherDamage,
-      gameEnd: this.checkGameEnd()
+  initializeDefaultGameState() {
+    this.gameState = {
+      player: {
+        current_hp: 100,
+        max_hp: 100,
+        deck: [],
+        hand: [],
+        discard_pile: [],
+        strike_zone: null,
+        support_zone: null,
+        spell_zone: null
+      },
+      pitcher: {
+        current_hp: 150,
+        max_hp: 150,
+        current_attack: 30,
+        base_attack: 30,
+        attribute: 'heaven',
+        skipNextTurn: false
+      },
+      gamePhase: 'PLAY_PHASE',
+      turnCount: 1,
+      turnBuffs: []
     };
   }
 
   /**
-   * 🌙 結束回合
-   */
-  async endTurn() {
-    console.log('🌙 結束回合...');
-    
-    // 執行回合結束階段
-    const gameEnd = await this.turnSystem.endOfTurn(this.gameState, this.combatSystem);
-    
-    if (gameEnd.gameOver) {
-      console.log(`🎮 遊戲結束: ${gameEnd.reason}`);
-      this.isGameRunning = false;
-      return gameEnd;
-    }
-
-    // 開始下一回合
-    this.gameState.turnCount++;
-    await this.startNewTurn();
-    
-    return { gameOver: false };
-  }
-
-  /**
-   * 🏆 檢查遊戲結束條件
-   */
-  checkGameEnd() {
-    if (this.gameState.player.current_hp <= 0) {
-      this.isGameRunning = false;
-      return { 
-        gameOver: true, 
-        winner: 'pitcher', 
-        reason: '玩家血量歸零',
-        playTime: Date.now() - this.gameStartTime
-      };
-    }
-    
-    if (this.gameState.pitcher.current_hp <= 0) {
-      this.isGameRunning = false;
-      return { 
-        gameOver: true, 
-        winner: 'player', 
-        reason: '投手血量歸零',
-        playTime: Date.now() - this.gameStartTime
-      };
-    }
-    
-    return { gameOver: false };
-  }
-
-  /**
-   * 📊 獲取遊戲狀態（只讀副本）
-   */
-  getGameState() {
-    return {
-      player: { ...this.gameState.player },
-      pitcher: { ...this.gameState.pitcher },
-      gamePhase: this.gameState.gamePhase,
-      turnCount: this.gameState.turnCount,
-      turnBuffs: [...this.gameState.turnBuffs],
-      turnPlayedCards: [...this.gameState.turnPlayedCards],
-      isGameRunning: this.isGameRunning,
-      gameStartTime: this.gameStartTime
-    };
-  }
-
-  /**
-   * 🔧 調試功能
+   * 🎴 添加卡牌到手牌 (調試用)
    */
   addCardToHand(cardId) {
     try {
       const card = CardRegistry.create(cardId);
-      this.gameState.player.hand.push(card);
-      console.log(`🔧 調試：添加了 ${card.name}`);
-      return true;
+      if (card && this.gameState?.player?.hand) {
+        // 添加唯一實例ID
+        card.cardInstanceId = Date.now() + Math.random();
+        card.tempAttack = 0;
+        card.permanentBonus = 0;
+        
+        this.gameState.player.hand.push(card);
+        this.updateUI();
+        
+        if (this.uiManager) {
+          this.uiManager.addLogEntry(`🎴 添加了 ${card.name}`, 'success');
+        }
+        
+        return true;
+      }
     } catch (error) {
       console.error(`❌ 無法添加卡牌 ${cardId}:`, error);
       return false;
@@ -344,23 +87,336 @@ export class GameController {
   }
 
   /**
-   * 💊 調試：直接治療玩家
+   * 💚 治療玩家 (調試用)
    */
-  healPlayer(amount) {
-    this.gameState.player.current_hp += amount;
+  healPlayer(amount = 20) {
+    if (!this.gameState?.player) return;
+    
+    const oldHP = this.gameState.player.current_hp;
     this.gameState.player.current_hp = Math.min(
-      this.gameState.player.max_hp, 
-      this.gameState.player.current_hp
+      this.gameState.player.max_hp,
+      this.gameState.player.current_hp + amount
     );
-    console.log(`🔧 調試：玩家回復 ${amount} 血量`);
+    
+    const actualHeal = this.gameState.player.current_hp - oldHP;
+    this.updateUI();
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`💚 回復 ${actualHeal} 血量`, 'success');
+    }
   }
 
   /**
-   * 💥 調試：直接傷害投手
+   * 💥 傷害投手 (調試用)
    */
-  damagePitcher(amount) {
-    this.gameState.pitcher.current_hp -= amount;
-    this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp);
-    console.log(`🔧 調試：投手受到 ${amount} 傷害`);
+  damagePitcher(amount = 30) {
+    if (!this.gameState?.pitcher) return;
+    
+    const oldHP = this.gameState.pitcher.current_hp;
+    this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp - amount);
+    
+    const actualDamage = oldHP - this.gameState.pitcher.current_hp;
+    this.updateUI();
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`💥 對投手造成 ${actualDamage} 傷害`, 'damage');
+    }
+  }
+
+  /**
+   * ↩️ 撤銷最後一次動作
+   */
+  undoLastAction() {
+    if (!this.gameState?.player) return;
+    
+    let undone = false;
+    const zones = ['spell_zone', 'support_zone', 'strike_zone'];
+    
+    for (const zone of zones) {
+      const card = this.gameState.player[zone];
+      if (card) {
+        // 檢查是否為抽牌類效果，若已觸發則不可撤回
+        if (card.effectType === 'draw' && this.triggeredEffects.has(card.cardInstanceId)) {
+          if (this.uiManager) {
+            this.uiManager.addLogEntry(`❌ ${card.name} 已發動抽牌效果，無法撤回`, 'system');
+          }
+          continue;
+        }
+        
+        this.removeCardFromZone(zone);
+        undone = true;
+        break;
+      }
+    }
+    
+    if (!undone && this.uiManager) {
+      this.uiManager.addLogEntry('❌ 沒有可撤銷的動作', 'system');
+    }
+  }
+
+  /**
+   * 🗑️ 從指定區域移除卡牌
+   */
+  removeCardFromZone(zone) {
+    if (!this.gameState?.player?.[zone]) return;
+
+    const card = this.gameState.player[zone];
+    
+    // 檢查抽牌效果
+    if (card.effectType === 'draw' && this.triggeredEffects.has(card.cardInstanceId)) {
+      if (this.uiManager) {
+        this.uiManager.addLogEntry(`❌ ${card.name} 已發動抽牌效果，無法撤回`, 'system');
+      }
+      return;
+    }
+
+    // 將卡牌放回手牌
+    this.gameState.player.hand.push(card);
+    this.gameState.player[zone] = null;
+    
+    // 清除臨時效果
+    if (card.tempAttack) {
+      card.tempAttack = 0;
+    }
+    
+    // 從已觸發效果列表中移除
+    this.triggeredEffects.delete(card.cardInstanceId);
+
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`↩️ 撤回 ${card.name}`, 'success');
+    }
+    
+    this.updateUI();
+  }
+
+  /**
+   * 🌙 結束回合
+   */
+  endTurn() {
+    if (!this.gameState) return;
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`---------- 回合 ${this.gameState.turnCount} 結束 ----------`, 'system');
+    }
+
+    // 執行自動攻擊
+    this.executeAutoAttack();
+
+    // 檢查戰鬥結果
+    if (this.checkBattleEnd()) {
+      return;
+    }
+
+    // 投手反擊
+    setTimeout(() => {
+      this.pitcherAttack();
+      
+      if (this.checkBattleEnd()) {
+        return;
+      }
+
+      setTimeout(() => {
+        this.endTurnCleanup();
+        this.gameState.turnCount++;
+        this.startNewTurn();
+      }, 1000);
+    }, 500);
+  }
+
+  /**
+   * ⚔️ 執行自動攻擊
+   */
+  executeAutoAttack() {
+    const strikeCard = this.gameState?.player?.strike_zone;
+    if (!strikeCard) {
+      if (this.uiManager) {
+        this.uiManager.addLogEntry('❌ 沒有打擊卡牌！', 'system');
+      }
+      return;
+    }
+
+    let totalAttack = 0;
+    let totalCrit = 0;
+
+    // 計算攻擊力 (只從打擊區)
+    totalAttack += (strikeCard.stats?.attack || 0) + (strikeCard.tempAttack || 0);
+    
+    // 計算暴擊率 (打擊區 + 輔助區)
+    totalCrit += strikeCard.stats?.crit || 0;
+    
+    const supportCard = this.gameState.player.support_zone;
+    if (supportCard) {
+      totalCrit += supportCard.stats?.crit || 0;
+    }
+
+    // 計算最終傷害
+    const isCritical = Math.random() * 100 < totalCrit;
+    const critMultiplier = isCritical ? 1.5 : 1;
+    const finalDamage = Math.round(totalAttack * critMultiplier);
+
+    // 對投手造成傷害
+    this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp - finalDamage);
+
+    const critMessage = isCritical ? ' 💥 觸發暴擊！' : '';
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`⚔️ 攻擊力 ${totalAttack} (暴擊率${totalCrit}%) 造成 ${finalDamage} 傷害！${critMessage}`, 'damage');
+    }
+    
+    this.updateUI();
+  }
+
+  /**
+   * 💥 投手攻擊
+   */
+  pitcherAttack() {
+    if (!this.gameState?.pitcher) return;
+    
+    if (this.gameState.pitcher.skipNextTurn) {
+      if (this.uiManager) {
+        this.uiManager.addLogEntry('⏸️ 投手被時間暫停，跳過攻擊', 'system');
+      }
+      this.gameState.pitcher.skipNextTurn = false;
+      return;
+    }
+
+    const damage = Math.max(1, this.gameState.pitcher.current_attack || 30);
+    this.gameState.player.current_hp = Math.max(0, this.gameState.player.current_hp - damage);
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`💥 投手反擊，造成 ${damage} 點傷害`, 'damage');
+    }
+    
+    this.updateUI();
+  }
+
+  /**
+   * 🏆 檢查戰鬥結束
+   */
+  checkBattleEnd() {
+    if (!this.gameState) return false;
+    
+    if (this.gameState.player.current_hp <= 0) {
+      if (this.uiManager) {
+        this.uiManager.addLogEntry('💀 戰敗！', 'damage');
+      }
+      this.isGameRunning = false;
+      return true;
+    }
+
+    if (this.gameState.pitcher.current_hp <= 0) {
+      if (this.uiManager) {
+        this.uiManager.addLogEntry('🏆 戰鬥勝利！', 'success');
+      }
+      this.isGameRunning = false;
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 🧹 回合結束清理
+   */
+  endTurnCleanup() {
+    if (!this.gameState) return;
+    
+    // 將場上卡牌移入棄牌堆
+    ['strike_zone', 'support_zone', 'spell_zone'].forEach(zone => {
+      const card = this.gameState.player[zone];
+      if (card) {
+        this.gameState.player.discard_pile.push(card);
+        this.gameState.player[zone] = null;
+      }
+    });
+
+    // 清理回合效果
+    this.gameState.turnBuffs = [];
+    
+    // 投手疲勞
+    this.gameState.pitcher.current_attack = Math.max(10, Math.round(this.gameState.pitcher.current_attack * 0.95));
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`😴 投手疲勞，攻擊力降至 ${this.gameState.pitcher.current_attack}`, 'system');
+    }
+  }
+
+  /**
+   * 🌅 開始新回合
+   */
+  startNewTurn() {
+    if (!this.gameState) return;
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry(`---------- 回合 ${this.gameState.turnCount} 開始 ----------`, 'system');
+    }
+    
+    // 抽牌到手牌上限
+    const handLimit = 7;
+    let drawnCount = 0;
+    
+    while (this.gameState.player.hand.length < handLimit && drawnCount < 3) {
+      // 簡化版：直接創建卡牌（實際應該從牌庫抽取）
+      if (Math.random() < 0.5) {
+        this.addCardToHand('hero');
+      } else {
+        this.addCardToHand('kindness');
+      }
+      drawnCount++;
+    }
+    
+    this.gameState.gamePhase = 'PLAY_PHASE';
+    this.updateUI();
+  }
+
+  /**
+   * 🎨 更新UI
+   */
+  updateUI() {
+    if (this.uiManager && this.gameState) {
+      this.uiManager.updateUI(this.gameState);
+    }
+  }
+
+  /**
+   * 📊 獲取遊戲狀態
+   */
+  getGameState() {
+    return this.gameState;
+  }
+
+  /**
+   * 🔄 重置遊戲
+   */
+  resetGame() {
+    this.triggeredEffects.clear();
+    this.initializeDefaultGameState();
+    this.isGameRunning = false;
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry('🔄 遊戲已重置', 'system');
+    }
+    
+    this.updateUI();
+  }
+
+  /**
+   * 🎯 開始遊戲
+   */
+  startGame() {
+    this.resetGame();
+    this.isGameRunning = true;
+    
+    // 添加一些初始卡牌
+    ['hero', 'kindness', 'president', 'strongman'].forEach(cardId => {
+      this.addCardToHand(cardId);
+    });
+    
+    if (this.uiManager) {
+      this.uiManager.addLogEntry('🎮 遊戲開始！', 'success');
+      this.uiManager.addLogEntry('💡 點擊卡牌選擇放置位置', 'system');
+      this.uiManager.addLogEntry('⚔️ 佈置好卡牌後，點擊「結束回合」發動攻擊', 'system');
+    }
+    
+    this.updateUI();
   }
 }
