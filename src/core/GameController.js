@@ -229,7 +229,7 @@ export class GameController {
   }
 
   /**
-   * ⚔️ 執行自動攻擊 - 修復版
+   * ⚔️ 執行自動攻擊 - 正確的暴擊系統
    */
   executeAutoAttack() {
     const strikeCard = this.gameState?.player?.strike_zone;
@@ -240,76 +240,102 @@ export class GameController {
       return;
     }
 
-    // 🎯 第一步：計算基礎攻擊力和暴擊率
+    // 🎯 第一步：計算總攻擊力（只有攻擊力，不包含暴擊）
     let totalAttack = 0;
-    let totalCrit = 0;
+    let critDamageBonus = 0; // 暴擊增傷（只來自輔助卡）
 
-    // 打擊卡基礎數值
-    totalAttack += (strikeCard.stats?.attack || 0);
-    totalCrit += (strikeCard.stats?.crit || 0);
+    // 打擊卡：只提供攻擊力
+    const strikeAttack = strikeCard.stats?.attack || 0;
+    totalAttack += strikeAttack;
     
-    // 輔助卡基礎數值（只加暴擊率，不加攻擊力）
+    // 輔助卡：提供攻擊力 + 暴擊增傷
     const supportCard = this.gameState.player.support_zone;
     if (supportCard) {
-      totalCrit += supportCard.stats?.crit || 0;
+      const supportAttack = supportCard.stats?.attack || 0;
+      const supportCritDamage = supportCard.stats?.crit || 0;
+      totalAttack += supportAttack;
+      critDamageBonus += supportCritDamage; // 只有輔助卡提供暴擊增傷
+      console.log(`🛡️ 輔助卡 ${supportCard.name}: +${supportAttack}攻擊, +${supportCritDamage}%暴擊增傷`);
     }
 
-    console.log(`📊 基礎數值: 攻擊力 ${totalAttack}, 暴擊率 ${totalCrit}%`);
+    console.log(`📊 基礎數值: 攻擊力 ${totalAttack}, 暴擊增傷 ${critDamageBonus}%`);
 
-    // 🎯 第二步：應用卡牌臨時加成
+    // 🎯 第二步：應用卡牌臨時攻擊力加成
     if (strikeCard.tempAttack) {
       totalAttack += strikeCard.tempAttack;
       console.log(`✨ ${strikeCard.name} 臨時攻擊力: +${strikeCard.tempAttack}`);
     }
 
-    // 🎯 第三步：應用turnBuffs（最重要！）
+    // 🎯 第三步：應用turnBuffs（只影響攻擊力）
+    let buffBonus = 0;
     if (this.gameState.turnBuffs && this.gameState.turnBuffs.length > 0) {
-      console.log(`🔥 應用 ${this.gameState.turnBuffs.length} 個回合Buff:`);
+      console.log(`🔥 檢查 ${this.gameState.turnBuffs.length} 個回合Buff:`);
       
       this.gameState.turnBuffs.forEach(buff => {
         console.log(`  - ${buff.type}: ${buff.value} (來源: ${buff.source})`);
         
-        if (buff.type === 'human_batter_attack_boost' && strikeCard.attribute === 'human') {
-          totalAttack += buff.value;
-          console.log(`    ✅ 應用到 ${strikeCard.name}: 攻擊力 +${buff.value}`);
+        if (buff.type === 'human_batter_attack_boost') {
+          if (strikeCard.attribute === 'human' && strikeCard.type === 'batter') {
+            buffBonus += buff.value;
+            console.log(`    ✅ 應用到 ${strikeCard.name}: 攻擊力 +${buff.value}`);
+          }
         }
       });
-    } else {
-      console.log(`⚠️ 沒有turnBuffs可應用`);
     }
+    
+    totalAttack += buffBonus;
 
-    // 🎯 第四步：計算最終傷害
-    const isCritical = Math.random() * 100 < totalCrit;
-    const critMultiplier = isCritical ? 1.5 : 1;
-    const finalDamage = Math.round(totalAttack * critMultiplier);
+    // 🎯 第四步：暴擊判定和最終傷害計算
+    const baseCritRate = 20; // 固定20%暴擊率
+    const isCritical = Math.random() * 100 < baseCritRate;
+    
+    let finalDamage;
+    if (isCritical) {
+      // 暴擊：應用暴擊增傷
+      const critMultiplier = 1 + (critDamageBonus / 100);
+      finalDamage = Math.round(totalAttack * critMultiplier);
+    } else {
+      // 普通攻擊：無暴擊增傷
+      finalDamage = totalAttack;
+    }
 
     // 對投手造成傷害
     this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp - finalDamage);
 
-    // 詳細日誌
-    const critMessage = isCritical ? ' 💥 觸發暴擊！' : '';
-    const buffInfo = this.gameState.turnBuffs.length > 0 ? 
-      ` (含Buff加成)` : '';
+    // 📊 詳細戰鬥報告
+    const battleReport = [
+      `⚔️ 戰鬥詳情:`,
+      `  打擊卡: ${strikeCard.name} (${strikeAttack}攻擊, ${strikeCard.stats?.crit || 0}%暴擊增傷-無效)`,
+      supportCard ? 
+        `  輔助卡: ${supportCard.name} (+${supportCard.stats?.attack || 0}攻擊, +${supportCard.stats?.crit || 0}%暴擊增傷)` : 
+        `  輔助卡: 無`,
+      strikeCard.tempAttack ? `  臨時加成: +${strikeCard.tempAttack}攻擊` : `  臨時加成: 無`,
+      buffBonus > 0 ? `  Buff加成: +${buffBonus}攻擊` : `  Buff加成: 無`,
+      `  總攻擊力: ${totalAttack}`,
+      `  暴擊率: ${baseCritRate}% (固定)`,
+      `  暴擊增傷: ${critDamageBonus}% (僅來自輔助卡)`,
+      `  暴擊觸發: ${isCritical ? '是' : '否'}`,
+      isCritical ? 
+        `  最終傷害: ${totalAttack} × (1 + ${critDamageBonus}%) = ${finalDamage}` :
+        `  最終傷害: ${totalAttack} (無暴擊)`
+    ].join('\n');
+    
+    console.log(battleReport);
+
+    // UI顯示
+    const critMessage = isCritical ? ` 💥 暴擊！(+${critDamageBonus}%增傷)` : '';
+    const buffInfo = buffBonus > 0 ? ` (含+${buffBonus}Buff)` : '';
     
     if (this.uiManager) {
       this.uiManager.addLogEntry(
-        `⚔️ 攻擊力 ${totalAttack}${buffInfo} (暴擊率${totalCrit}%) 造成 ${finalDamage} 傷害！${critMessage}`, 
+        `⚔️ ${totalAttack}攻擊力${buffInfo}${isCritical ? ` × ${1 + critDamageBonus/100}` : ''} = ${finalDamage}傷害${critMessage}`, 
         'damage'
       );
     }
     
-    console.log(`⚔️ 攻擊詳情:
-    - 基礎攻擊力: ${strikeCard.stats?.attack || 0}
-    - 臨時加成: ${strikeCard.tempAttack || 0}
-    - Buff加成: ${this.gameState.turnBuffs.filter(b => b.type === 'human_batter_attack_boost' && strikeCard.attribute === 'human').reduce((sum, b) => sum + b.value, 0)}
-    - 總攻擊力: ${totalAttack}
-    - 暴擊率: ${totalCrit}%
-    - 暴擊觸發: ${isCritical}
-    - 最終傷害: ${finalDamage}`);
-    
     this.updateUI();
   }
-
+  
   /**
    * 💥 投手攻擊
    */

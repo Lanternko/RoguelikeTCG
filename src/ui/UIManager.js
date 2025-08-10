@@ -248,17 +248,26 @@ export class UIManager {
   }
 
   /**
-   * 🎨 渲染卡牌HTML
+   * 🎨 渲染卡牌HTML - 支持灰色無效數值
    */
   renderCard(card, index) {
     const cardClasses = this.generateCardClasses(card.attribute, card.rarity);
     const animationDelay = (index >= 0 && index < 7) ? index * 0.1 : 0;
     
+    // 判斷當前卡牌是否在打擊區或輔助區
+    const isInStrikeZone = this.gameState?.player?.strike_zone?.id === card.id;
+    const isInSupportZone = this.gameState?.player?.support_zone?.id === card.id;
+    
+    // 暴擊數值是否有效（只有輔助區的卡牌暴擊增傷有效）
+    const critValueActive = isInSupportZone;
+    const critTextClass = critValueActive ? 'text-yellow-300' : 'text-gray-500';
+    const critLabel = critValueActive ? '暴擊增傷' : '暴擊增傷';
+    
     return `
       <div class="${cardClasses} ${index >= 0 ? 'hand-card' : ''}" 
-           draggable="true" 
-           data-card-index="${index}" 
-           style="animation-delay: ${animationDelay}s">
+          draggable="true" 
+          data-card-index="${index}" 
+          style="animation-delay: ${animationDelay}s">
         
         <div class="text-center mb-2">
           <div class="font-bold text-sm mb-1">${card.name}</div>
@@ -275,8 +284,8 @@ export class UIManager {
             </div>
           </div>
           <div class="text-center">
-            <div class="text-xs opacity-75">暴擊</div>
-            <div class="font-bold text-lg text-yellow-300">
+            <div class="text-xs opacity-75">${critLabel}</div>
+            <div class="font-bold text-lg ${critTextClass}">
               ${card.stats?.crit || 0}%
             </div>
           </div>
@@ -334,32 +343,67 @@ export class UIManager {
   }
 
   /**
-   * ⚔️ 更新戰鬥區域
+   * ⚔️ 更新戰鬥區域 - 顯示無效數值為灰色
    */
   updateBattleZones(gameState) {
     const zones = [
-      { element: this.elements.strikeZone, card: gameState.player.strike_zone, icon: '🗡️', name: '打擊' },
-      { element: this.elements.supportZone, card: gameState.player.support_zone, icon: '🛡️', name: '輔助' },
-      { element: this.elements.spellZone, card: gameState.player.spell_zone, icon: '✨', name: '法術' }
+      { element: this.elements.strikeZone, card: gameState.player.strike_zone, icon: '🗡️', name: '打擊', zone: 'strike' },
+      { element: this.elements.supportZone, card: gameState.player.support_zone, icon: '🛡️', name: '輔助', zone: 'support' },
+      { element: this.elements.spellZone, card: gameState.player.spell_zone, icon: '✨', name: '法術', zone: 'spell' }
     ];
     
-    zones.forEach(({ element, card, icon, name }) => {
+    zones.forEach(({ element, card, icon, name, zone }) => {
       if (!element || element.dataset?.isDummy) return;
       
       if (card) {
-        element.innerHTML = this.renderCard(card, -1); // -1 表示不在手牌中
+        // 暴擊增傷只在輔助區有效
+        const critEffective = (zone === 'support');
+        const critTextClass = critEffective ? 'text-yellow-300' : 'text-gray-500';
+        
+        element.innerHTML = `
+          <div class="relative w-full h-full rounded-xl p-3 text-xs flex flex-col justify-between ${this.generateCardClasses(card.attribute, card.rarity)}">
+            
+            <div class="text-center mb-2">
+              <div class="font-bold text-sm mb-1">${card.name}</div>
+              <div class="text-[10px] opacity-80">${card.attribute} • ${card.type}</div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-2">
+              <div class="text-center">
+                <div class="text-xs opacity-75">攻擊</div>
+                <div class="font-bold text-lg text-red-300">
+                  ${card.stats?.attack || 0}${card.tempAttack ? `+${card.tempAttack}` : ''}
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs opacity-75">暴擊增傷</div>
+                <div class="font-bold text-lg ${critTextClass}">
+                  ${card.stats?.crit || 0}%
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-[9px] leading-tight opacity-90 bg-black/20 p-2 rounded text-center">
+              ${card.description || '無效果'}
+            </div>
+            
+            ${critEffective ? '' : '<div class="absolute top-2 right-2 text-gray-400 text-xs">暴擊無效</div>'}
+          </div>
+        `;
         element.classList.add('card-zone-occupied');
       } else {
         element.innerHTML = `
           <div class="text-center text-orange-300 h-full flex flex-col items-center justify-center">
             <div class="text-3xl mb-2">${icon}</div>
             <div class="text-sm">拖拽${name}卡到此處</div>
+            ${zone === 'support' ? '<div class="text-xs mt-1 text-yellow-300">提供暴擊增傷</div>' : ''}
           </div>
         `;
         element.classList.remove('card-zone-occupied');
       }
     });
   }
+
 
   /**
    * ℹ️ 更新遊戲信息

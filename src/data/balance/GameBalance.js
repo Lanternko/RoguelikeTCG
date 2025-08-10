@@ -1,9 +1,5 @@
-// ===== 📊 GAME BALANCE (src/data/balance/GameBalance.js) =====
+// ===== 4. 更新遊戲常數 =====
 
-/**
- * 📊 遊戲平衡數據
- * 只包含全局遊戲參數，避免循環依賴
- */
 export const GAME_BALANCE = {
   // 玩家基礎數值
   PLAYER_INITIAL_HP: 100,
@@ -13,9 +9,8 @@ export const GAME_BALANCE = {
   PITCHER_BASE_ATTACK: 30,
   PITCHER_BASE_FATIGUE_RATE: 0.05,
   
-  // 投手第二階段
-  PITCHER_STAGE2_HP: 200,
-  PITCHER_STAGE2_ATTACK: 45,
+  // 🆕 暴擊系統
+  BASE_CRIT_RATE: 20,  // 固定20%暴擊率
   
   // 遊戲限制
   HAND_SIZE_LIMIT: 7,
@@ -28,13 +23,27 @@ export const GAME_BALANCE = {
   
   // 賽季設置
   TOTAL_BATTLES_PER_SEASON: 15,
-  BADGE_BATTLE_NUMBERS: [1, 4, 7, 10, 13],
-  
-  // 平衡調整開關
-  BALANCE_MODIFIERS: {
-    GLOBAL_DAMAGE_MULTIPLIER: 1.0,      // 全局傷害倍數
-    GLOBAL_HP_MULTIPLIER: 1.0,          // 全局血量倍數
-    CRIT_DAMAGE_MULTIPLIER: 1.0,        // 暴擊傷害倍數
-    PITCHER_DIFFICULTY_MULTIPLIER: 1.0   // 投手難度倍數
-  }
+  BADGE_BATTLE_NUMBERS: [1, 4, 7, 10, 13]
 };
+
+// ===== 5. 更新調試工具 =====
+
+// 在調試工具中添加暴擊測試
+testCrit: () => {
+  const gameState = this.gameController.getGameState();
+  const strikeCard = gameState?.player?.strike_zone;
+  const supportCard = gameState?.player?.support_zone;
+  
+  console.log('🎯 暴擊系統測試:');
+  console.log(`基礎暴擊率: 20% (固定)`);
+  
+  if (strikeCard) {
+    console.log(`打擊卡 ${strikeCard.name}: ${strikeCard.stats.crit}%暴擊增傷 (❌ 無效)`);
+  }
+  
+  if (supportCard) {
+    console.log(`輔助卡 ${supportCard.name}: ${supportCard.stats.crit}%暴擊增傷 (✅ 有效)`);
+  } else {
+    console.log('輔助卡: 無 (0%暴擊增傷)');
+  }
+}
