@@ -1,16 +1,16 @@
-// main.js - 最終版主應用程序文件
+
+// main.js - 正確版本
 
 import { GameController } from './core/GameController.js';
 import { UIManager } from './ui/UIManager.js';
 import { CardRegistry } from './cards/CardRegistry.js';
 
 /**
- * 🎮 MyGO!!!!! TCG 主應用程序
- * 包含完整的拖拽系統、移動端支持和事件處理
+ * 🎮 主應用程序類
  */
 class MyGoTCGApplication {
   constructor() {
-    console.log('🎸 MyGO!!!!! TCG 人類主題版本初始化...');
+    console.log('🎸 MyGO!!!!! TCG 應用程序初始化...');
     
     this.gameController = null;
     this.uiManager = null;
@@ -23,7 +23,7 @@ class MyGoTCGApplication {
    * 🚀 初始化應用程序
    */
   async initialize() {
-    console.log('🔧 正在初始化人類主題版本...');
+    console.log('🔧 正在初始化各個系統...');
     
     try {
       // 1. 初始化卡牌註冊表
@@ -39,7 +39,7 @@ class MyGoTCGApplication {
       this.connectSystems();
       
       this.isInitialized = true;
-      console.log('✅ 人類主題版本初始化完成！');
+      console.log('✅ 應用程序初始化完成！');
       
     } catch (error) {
       console.error('❌ 應用程序初始化失敗:', error);
@@ -588,7 +588,7 @@ class MyGoTCGApplication {
       window.gameDebug = this.createDebugTools();
       
       setTimeout(() => {
-        console.log(`%c🎮 MyGO!!!!! TCG - 人類主題版本調試工具已啟用`, 'color: #f97316; font-weight: bold; font-size: 14px;');
+        console.log(`%c🎮 MyGO!!!!! TCG - 調試工具已啟用`, 'color: #f97316; font-weight: bold; font-size: 14px;');
         console.log(`使用 gameDebug 來訪問調試功能`);
         console.log(`使用 myGoApp 來訪問應用程序實例`);
       }, 2000);
@@ -665,15 +665,14 @@ class MyGoTCGApplication {
       return;
     }
 
-    console.log('🎯 開始人類主題遊戲...');
+    console.log('🎯 開始新遊戲...');
     
     try {
       // 啟動遊戲
       this.gameController.startGame();
       
       if (this.uiManager) {
-        this.uiManager.addLogEntry('🎉 歡迎來到 MyGO!!!!! TCG 人類主題版本！', 'success');
-        this.uiManager.addLogEntry('👥 在這個版本中，人類卡牌擁有強大的團結力量', 'system');
+        this.uiManager.addLogEntry('🎉 歡迎來到 MyGO!!!!! TCG！', 'success');
         this.uiManager.addLogEntry('💡 將卡牌放置到戰鬥區域以使用', 'system');
         
         if (this.isMobile) {
@@ -683,13 +682,10 @@ class MyGoTCGApplication {
         }
         
         this.uiManager.addLogEntry('⚔️ 佈置好卡牌後，點擊「結束回合」來發動攻擊', 'system');
-        this.uiManager.addLogEntry('👥 人類主題特色：', 'system');
-        this.uiManager.addLogEntry('  • 總統：人屬性卡越多越強', 'system');
-        this.uiManager.addLogEntry('  • 慈愛：為所有人屬打者提供攻擊力加成', 'system');
-        this.uiManager.addLogEntry('  • 英雄：純粹的力量，無特殊效果但數值優秀', 'system');
+        this.uiManager.addLogEntry('👥 人類主題：人屬性卡牌相互配合更強！', 'system');
       }
       
-      console.log('✅ 人類主題遊戲開始成功');
+      console.log('✅ 遊戲開始成功');
       
     } catch (error) {
       console.error('❌ 開始遊戲時發生錯誤:', error);
@@ -720,13 +716,13 @@ class MyGoTCGApplication {
  * 🎬 啟動應用程序
  */
 export async function startApplication() {
-  console.log('🎬 啟動 MyGO!!!!! TCG 人類主題版本...');
+  console.log('🎬 啟動 MyGO!!!!! TCG...');
   
   const app = new MyGoTCGApplication();
   
   try {
     await app.initialize();
-    console.log('🎉 MyGO!!!!! TCG 人類主題版本初始化完成');
+    console.log('🎉 MyGO!!!!! TCG 初始化完成');
     
     // 延遲啟動遊戲，確保UI就緒
     setTimeout(async () => {
@@ -755,7 +751,7 @@ function showErrorScreen(error) {
       <div class="min-h-screen bg-red-900 text-white flex items-center justify-center p-4">
         <div class="bg-red-800 p-8 rounded-lg shadow-lg max-w-md text-center">
           <h1 class="text-2xl font-bold text-red-300 mb-4">載入失敗</h1>
-          <p class="text-red-200 mb-4">MyGO!!!!! TCG 人類主題版本無法正常啟動</p>
+          <p class="text-red-200 mb-4">遊戲無法正常啟動，請檢查控制台錯誤訊息。</p>
           <pre class="text-xs bg-gray-900 p-2 rounded mb-4 text-left whitespace-pre-wrap">${error.stack || error.message}</pre>
           <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
             重新載入

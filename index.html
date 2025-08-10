@@ -111,6 +111,8 @@
                         <div class="text-sm text-orange-300">回合 <span id="turn-counter">1</span></div>
                         <div id="game-phase" class="text-lg font-bold text-orange-200">抽牌階段</div>
                         <div class="text-xs text-orange-300 mt-1">團結就是力量！</div>
+                        <!-- 隱藏的投手階段元素 -->
+                        <div id="pitcher-stage" class="hidden">1</div>
                     </div>
                     
                     <!-- 投手狀態 -->
@@ -208,6 +210,9 @@
                                 class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                             ↩️ 撤銷
                         </button>
+                        
+                        <!-- 隱藏的攻擊按鈕 -->
+                        <button id="attack-btn" class="hidden">攻擊</button>
                     </div>
                 </div>
             </div>
