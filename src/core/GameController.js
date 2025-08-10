@@ -1,11 +1,11 @@
-// src/core/GameController.js - 簡化版遊戲控制器
+// src/core/GameController.js - 修復攻擊力計算系統
 
 import { EventBus } from './EventBus.js';
 import { CardRegistry } from '../cards/CardRegistry.js';
 
 /**
- * 🎮 遊戲控制器 - 簡化版
- * 負責管理遊戲邏輯和狀態
+ * 🎮 遊戲控制器 - 修復版
+ * 正確處理攻擊力加成和暴擊計算
  */
 export class GameController {
   constructor() {
@@ -55,7 +55,7 @@ export class GameController {
       },
       gamePhase: 'PLAY_PHASE',
       turnCount: 1,
-      turnBuffs: []
+      turnBuffs: []  // 確保turnBuffs初始化
     };
   }
 
@@ -174,10 +174,15 @@ export class GameController {
     this.gameState.player.hand.push(card);
     this.gameState.player[zone] = null;
     
-    // 清除臨時效果
+    // 清除臨時效果和turnBuffs
     if (card.tempAttack) {
       card.tempAttack = 0;
     }
+    
+    // 清除該卡牌產生的turnBuffs
+    this.gameState.turnBuffs = this.gameState.turnBuffs.filter(buff => 
+      buff.source !== card.name
+    );
     
     // 從已觸發效果列表中移除
     this.triggeredEffects.delete(card.cardInstanceId);
@@ -224,7 +229,7 @@ export class GameController {
   }
 
   /**
-   * ⚔️ 執行自動攻擊
+   * ⚔️ 執行自動攻擊 - 修復版
    */
   executeAutoAttack() {
     const strikeCard = this.gameState?.player?.strike_zone;
@@ -235,21 +240,45 @@ export class GameController {
       return;
     }
 
+    // 🎯 第一步：計算基礎攻擊力和暴擊率
     let totalAttack = 0;
     let totalCrit = 0;
 
-    // 計算攻擊力 (只從打擊區)
-    totalAttack += (strikeCard.stats?.attack || 0) + (strikeCard.tempAttack || 0);
+    // 打擊卡基礎數值
+    totalAttack += (strikeCard.stats?.attack || 0);
+    totalCrit += (strikeCard.stats?.crit || 0);
     
-    // 計算暴擊率 (打擊區 + 輔助區)
-    totalCrit += strikeCard.stats?.crit || 0;
-    
+    // 輔助卡基礎數值（只加暴擊率，不加攻擊力）
     const supportCard = this.gameState.player.support_zone;
     if (supportCard) {
       totalCrit += supportCard.stats?.crit || 0;
     }
 
-    // 計算最終傷害
+    console.log(`📊 基礎數值: 攻擊力 ${totalAttack}, 暴擊率 ${totalCrit}%`);
+
+    // 🎯 第二步：應用卡牌臨時加成
+    if (strikeCard.tempAttack) {
+      totalAttack += strikeCard.tempAttack;
+      console.log(`✨ ${strikeCard.name} 臨時攻擊力: +${strikeCard.tempAttack}`);
+    }
+
+    // 🎯 第三步：應用turnBuffs（最重要！）
+    if (this.gameState.turnBuffs && this.gameState.turnBuffs.length > 0) {
+      console.log(`🔥 應用 ${this.gameState.turnBuffs.length} 個回合Buff:`);
+      
+      this.gameState.turnBuffs.forEach(buff => {
+        console.log(`  - ${buff.type}: ${buff.value} (來源: ${buff.source})`);
+        
+        if (buff.type === 'human_batter_attack_boost' && strikeCard.attribute === 'human') {
+          totalAttack += buff.value;
+          console.log(`    ✅ 應用到 ${strikeCard.name}: 攻擊力 +${buff.value}`);
+        }
+      });
+    } else {
+      console.log(`⚠️ 沒有turnBuffs可應用`);
+    }
+
+    // 🎯 第四步：計算最終傷害
     const isCritical = Math.random() * 100 < totalCrit;
     const critMultiplier = isCritical ? 1.5 : 1;
     const finalDamage = Math.round(totalAttack * critMultiplier);
@@ -257,10 +286,26 @@ export class GameController {
     // 對投手造成傷害
     this.gameState.pitcher.current_hp = Math.max(0, this.gameState.pitcher.current_hp - finalDamage);
 
+    // 詳細日誌
     const critMessage = isCritical ? ' 💥 觸發暴擊！' : '';
+    const buffInfo = this.gameState.turnBuffs.length > 0 ? 
+      ` (含Buff加成)` : '';
+    
     if (this.uiManager) {
-      this.uiManager.addLogEntry(`⚔️ 攻擊力 ${totalAttack} (暴擊率${totalCrit}%) 造成 ${finalDamage} 傷害！${critMessage}`, 'damage');
+      this.uiManager.addLogEntry(
+        `⚔️ 攻擊力 ${totalAttack}${buffInfo} (暴擊率${totalCrit}%) 造成 ${finalDamage} 傷害！${critMessage}`, 
+        'damage'
+      );
     }
+    
+    console.log(`⚔️ 攻擊詳情:
+    - 基礎攻擊力: ${strikeCard.stats?.attack || 0}
+    - 臨時加成: ${strikeCard.tempAttack || 0}
+    - Buff加成: ${this.gameState.turnBuffs.filter(b => b.type === 'human_batter_attack_boost' && strikeCard.attribute === 'human').reduce((sum, b) => sum + b.value, 0)}
+    - 總攻擊力: ${totalAttack}
+    - 暴擊率: ${totalCrit}%
+    - 暴擊觸發: ${isCritical}
+    - 最終傷害: ${finalDamage}`);
     
     this.updateUI();
   }
@@ -331,6 +376,7 @@ export class GameController {
 
     // 清理回合效果
     this.gameState.turnBuffs = [];
+    console.log(`🧹 清理turnBuffs，重置為空陣列`);
     
     // 投手疲勞
     this.gameState.pitcher.current_attack = Math.max(10, Math.round(this.gameState.pitcher.current_attack * 0.95));
@@ -349,6 +395,10 @@ export class GameController {
     if (this.uiManager) {
       this.uiManager.addLogEntry(`---------- 回合 ${this.gameState.turnCount} 開始 ----------`, 'system');
     }
+    
+    // 確保turnBuffs已重置
+    this.gameState.turnBuffs = [];
+    console.log(`🌅 新回合開始，turnBuffs重置為空陣列`);
     
     // 抽牌到手牌上限
     const handLimit = 7;

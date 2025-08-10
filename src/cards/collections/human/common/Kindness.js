@@ -1,4 +1,5 @@
 // src/cards/collections/human/common/Kindness.js - 修復版
+
 export class KindnessCard {
   static create() {
     return {
@@ -19,20 +20,42 @@ export class KindnessCard {
       effects: {
         on_support: async function(gameState) {
           console.log('🛡️ 慈愛輔助效果觸發');
+          console.log('🔍 當前遊戲狀態:', {
+            turnBuffs: gameState.turnBuffs,
+            strikeCard: gameState.player.strike_zone?.name,
+            strikeAttribute: gameState.player.strike_zone?.attribute
+          });
           
           // 確保 turnBuffs 存在
           if (!gameState.turnBuffs) {
             gameState.turnBuffs = [];
+            console.log('📋 初始化 turnBuffs 陣列');
           }
           
           // 添加人屬性打者攻擊力加成
-          gameState.turnBuffs.push({
+          const buff = {
             type: 'human_batter_attack_boost',
             value: 10,
-            source: '慈愛'
-          });
+            source: '慈愛',
+            duration: 1,  // 本回合結束後失效
+            description: '人屬性打者攻擊力+10'
+          };
           
-          console.log('✅ 慈愛效果已添加到 turnBuffs:', gameState.turnBuffs);
+          gameState.turnBuffs.push(buff);
+          
+          console.log('✅ 慈愛效果已添加到 turnBuffs');
+          console.log('📊 更新後的 turnBuffs:', gameState.turnBuffs);
+          
+          // 如果有打擊區的人屬性打者，立即顯示加成效果
+          const strikeCard = gameState.player.strike_zone;
+          if (strikeCard && strikeCard.attribute === 'human' && strikeCard.type === 'batter') {
+            console.log(`🎯 ${strikeCard.name} 將獲得 +10 攻擊力加成`);
+            
+            return { 
+              success: true,
+              description: `本回合人屬性打者攻擊力+10 (${strikeCard.name} 受益)` 
+            };
+          }
           
           return { 
             success: true,
